@@ -75,12 +75,12 @@
 
 ## الخطوة 4: ربط الواجهة بالخادم ونشرها
 
-1. في GitHub افتح الملف `frontend/js/config.js`، واضغط ✏️، ثم ضع الرابط مكان `PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE`:
+1. في المستودع افتح **Settings** ← **Pages**، واختر في **Source**: `GitHub Actions`. (افعل هذا أولًا، لأن النشر يفشل قبله.)
+2. في GitHub افتح الملف `frontend/js/config.js`، واضغط ✏️، ثم ضع الرابط مكان `PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE`:
    ```js
    export const API_URL = 'https://script.google.com/macros/s/XXXXXXXX/exec';
    ```
    ثم اضغط **Commit changes**.
-2. في المستودع افتح **Settings** ← **Pages**، واختر في **Source**: `GitHub Actions`.
 3. افتح تبويب **Actions** وانتظر حتى يكتمل «Deploy frontend» ✅.
 4. رابط التطبيق سيكون:
    **`https://abdelfatehtebbani-creator.github.io/amn-wa-salama/`**
