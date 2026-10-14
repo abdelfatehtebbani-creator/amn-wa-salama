@@ -220,7 +220,7 @@ function createEnv() {
   };
 
   const context = vm.createContext(env);
-  const dir = path.join(__dirname, '..', 'backend');
+  const dir = process.env.GAS_DIR || path.join(__dirname, '..', 'backend');
   const code = fs.readdirSync(dir).filter(f => f.endsWith('.gs')).sort()
     .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n;\n');
   vm.runInContext(code, context, { filename: 'backend.gs' });

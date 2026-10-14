@@ -6,7 +6,10 @@
   "scripts": {
     "test": "node --test tests/backend.test.js",
     "dev": "node tests/dev-server.js",
-    "check": "node scripts/check-syntax.js"
+    "check": "node scripts/check-syntax.js",
+    "bundle": "node scripts/bundle-gs.js"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }

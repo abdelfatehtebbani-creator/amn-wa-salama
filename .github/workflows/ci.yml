@@ -15,3 +15,7 @@ jobs:
           node-version: 22
       - run: npm run check
       - run: npm test
+      - run: npm run bundle
+      - run: npm test
+        env:
+          GAS_DIR: dist/apps-script
