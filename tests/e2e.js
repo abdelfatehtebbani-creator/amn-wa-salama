@@ -76,6 +76,10 @@ async function forcedChange(page, oldPw, newPw) {
     await page.fill('input[name=doc_number]', 'F-00777');
     await page.locator('input[type=file][multiple]').setInputFiles([P0, P1]);
     await page.waitForFunction(() => document.querySelectorAll('.thumb').length === 2);
+    assert.equal(await page.locator('input[name=event_at]').count(), 0); // التاريخ تلقائي
+    await page.click('#save-btn');
+    await page.waitForSelector('#form-status >> text=اختر نوع الفاتورة'); // نوع الفاتورة إلزامي
+    await page.check('input[name=invoice_source][value=supplier]');
     await shot(page, '04-form-in');
     await page.click('#save-btn');
     await page.waitForSelector('.success .record-id');
@@ -87,6 +91,7 @@ async function forcedChange(page, oldPw, newPw) {
     await page.goto(base + '#/new/OUT');
     await page.waitForSelector('select[name=branch] option:nth-child(2)', { state: 'attached' });
     await page.selectOption('select[name=branch]', 'فرع باب الوادي');
+    await page.check('input[name=invoice_source][value=aker]');
     await page.locator('input[type=file][capture]').setInputFiles(P0);
     await page.waitForSelector('.thumb');
     let failOnce = true;
@@ -198,6 +203,7 @@ async function forcedChange(page, oldPw, newPw) {
     await shot(page, '15-archive-en');
     await page.click('.record-card');
     await page.waitForSelector('.details >> text=Recorded by');
+    await page.waitForSelector('.details >> text=Supplier invoices');
     await shot(page, '16-record-en');
     await page.goto(base + '#/settings');
     await page.waitForSelector('#functions >> text=Food safety');

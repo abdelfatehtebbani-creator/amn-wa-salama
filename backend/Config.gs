@@ -31,6 +31,9 @@ const PENDING_FILE_TTL_HOURS = 48;   // صور رُفعت ولم يكتمل سج
 
 const ACCESS_LEVELS = { admin: 'إدارة', user: 'مستخدم' };
 
+/** تقسيم البضاعة الداخلة والخارجة حسب مصدر الفاتورة. */
+const INVOICE_SOURCES = { aker: 'فواتير العكر', supplier: 'فواتير موردين' };
+
 const PAGE_SIZE = 30;
 const TODAY_SCAN_ROWS = 400;         // عدد الصفوف الأخيرة التي تُفحص لقائمة «سجلاتي اليوم»
 const DATE_FORMAT = 'yyyy-MM-dd HH:mm:ss';
@@ -39,7 +42,7 @@ const DATE_FORMAT = 'yyyy-MM-dd HH:mm:ss';
 const SCHEMA = {
   Records: ['record_id', 'type', 'event_at', 'created_at', 'created_by', 'supplier', 'branch',
     'person_name', 'doc_number', 'description', 'notes', 'file_ids', 'file_count', 'status',
-    'updated_at', 'updated_by', 'request_id', 'created_by_role'],
+    'updated_at', 'updated_by', 'request_id', 'created_by_role', 'invoice_source'],
   Files: ['file_key', 'request_id', 'record_id', 'image_index', 'drive_file_id', 'file_name',
     'mime_type', 'size_bytes', 'uploaded_at', 'uploaded_by', 'status'],
   Branches: ['branch_id', 'name', 'active', 'sort_order'],

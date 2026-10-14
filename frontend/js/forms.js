@@ -1,7 +1,7 @@
 // نماذج إنشاء السجلات الثلاثة، مع رفع الصور وإعادة المحاولة دون تكرار.
 import { call } from './api.js';
 import { compressImage, blobToBase64, newRequestId } from './images.js';
-import { esc, $, $$, render, nowLocalInput, toast, TYPE_LABELS, TYPE_ICONS, errorBox } from './ui.js';
+import { esc, $, $$, render, toast, TYPE_LABELS, TYPE_ICONS, INVOICE_LABELS, errorBox } from './ui.js';
 import { t, backArrow } from './i18n.js';
 
 const MAX_IMAGES = 10;
@@ -24,12 +24,14 @@ export function leaveForm() {
   window.removeEventListener('beforeunload', unloadGuard);
 }
 
+// لا حقل للتاريخ: الخادم يسجّل وقت الحفظ تلقائيًا.
 const FIELD_HTML = {
-  event_at: type => `
-    <label class="field">
-      <span>${type === 'INC' ? t('تاريخ ووقت الواقعة') : t('التاريخ والوقت')}</span>
-      <input type="datetime-local" name="event_at" value="${nowLocalInput()}" required>
-    </label>`,
+  invoice_source: () => `
+    <fieldset class="field segmented">
+      <legend>${t('نوع الفاتورة')}</legend>
+      ${Object.keys(INVOICE_LABELS).map(k => `
+        <label><input type="radio" name="invoice_source" value="${k}"><span>${esc(INVOICE_LABELS[k])}</span></label>`).join('')}
+    </fieldset>`,
   supplier: () => `
     <label class="field">
       <span>${t('اسم المورد')} <small>${t('(اختياري)')}</small></span>
@@ -64,9 +66,9 @@ const FIELD_HTML = {
 };
 
 const FIELDS = {
-  IN: ['event_at', 'supplier', 'doc_number', 'description', 'notes'],
-  OUT: ['event_at', 'branch', 'doc_number', 'description', 'notes'],
-  INC: ['event_at', 'person_name', 'description', 'notes']
+  IN: ['invoice_source', 'supplier', 'doc_number', 'description', 'notes'],
+  OUT: ['invoice_source', 'branch', 'doc_number', 'description', 'notes'],
+  INC: ['person_name', 'description', 'notes']
 };
 
 export function renderForm(type, user) {
@@ -84,20 +86,18 @@ export function renderForm(type, user) {
         <h1>${TYPE_ICONS[type]} ${esc(TYPE_LABELS[type])}</h1>
       </header>
       <form id="record-form" novalidate>
-        ${FIELDS[type].map(f => FIELD_HTML[f](type)).join('')}
-
-        <div class="field">
-          <span>${t('الصور')} <small>${t('(صورة واحدة على الأقل، حتى {n})', { n: MAX_IMAGES })}</small></span>
+        <div class="field photos-first">
+          <label class="btn primary camera-btn">📷 ${t('التقاط صورة')}
+            <input type="file" accept="image/*" capture="environment" hidden data-pick>
+          </label>
+          <label class="btn link gallery-btn">🖼️ ${t('أو اختر من الجهاز')}
+            <input type="file" accept="image/*" multiple hidden data-pick>
+          </label>
           <div class="thumbs" id="thumbs"></div>
-          <div class="photo-buttons">
-            <label class="btn secondary">📷 ${t('التقاط صورة')}
-              <input type="file" accept="image/*" capture="environment" hidden data-pick>
-            </label>
-            <label class="btn secondary">🖼️ ${t('من الجهاز')}
-              <input type="file" accept="image/*" multiple hidden data-pick>
-            </label>
-          </div>
+          <small class="muted">${t('(صورة واحدة على الأقل، حتى {n})', { n: MAX_IMAGES })}</small>
         </div>
+
+        ${FIELDS[type].map(f => FIELD_HTML[f](type)).join('')}
 
         <p class="muted">${t('يُسجَّل باسم:')} <strong>${esc(user.display_name)}</strong></p>
         <div id="form-status" aria-live="polite"></div>
@@ -186,13 +186,13 @@ function setStatus(html) {
 function collectFields(form) {
   const data = Object.fromEntries(new FormData(form).entries());
   const fields = {};
-  FIELDS[state.type].filter(f => f !== 'event_at').forEach(f => { fields[f] = (data[f] || '').trim(); });
-  return { event_at: data.event_at, fields };
+  FIELDS[state.type].forEach(f => { fields[f] = (data[f] || '').trim(); });
+  return { fields };
 }
 
 function validate(values) {
   if (!state.images.length) return t('أرفق صورة واحدة على الأقل.');
-  if (!values.event_at) return t('حدّد التاريخ والوقت.');
+  if (FIELDS[state.type].includes('invoice_source') && !values.fields.invoice_source) return t('اختر نوع الفاتورة: فواتير العكر أو فواتير موردين.');
   if (state.type === 'OUT' && !values.fields.branch) return t('اختر الفرع المستلم.');
   if (state.type === 'INC' && !values.fields.description) return t('اكتب وصفًا مختصرًا للواقعة.');
   return '';
@@ -244,7 +244,7 @@ async function save() {
       setStatus(`<div class="alert info">${t('جارٍ حفظ السجل…')}</div>`);
       try {
         result = await call('createRecord', {
-          request_id: state.requestId, type: state.type, event_at: values.event_at,
+          request_id: state.requestId, type: state.type,
           fields: values.fields, image_indexes: state.images.map(i => i.index)
         });
         break;

@@ -7,6 +7,12 @@ export const TYPE_LABELS = {
   get OUT() { return t('بضاعة خارجة'); },
   get INC() { return t('مخالفات العمال'); }
 };
+/** مصدر الفاتورة للبضاعة الداخلة والخارجة. */
+export const INVOICE_LABELS = {
+  get aker() { return t('فواتير العكر'); },
+  get supplier() { return t('فواتير موردين'); }
+};
+
 export const TYPE_ICONS = { IN: '📥', OUT: '📤', INC: '⚠️' };
 
 export function esc(value) {
@@ -27,13 +33,6 @@ export function render(html) {
 
 /** 'yyyy-MM-dd HH:mm:ss' → 'yyyy-MM-dd HH:mm' */
 export function shortDate(s) { return String(s || '').slice(0, 16); }
-
-/** قيمة حقل datetime-local للوقت الحالي بتوقيت الجهاز. */
-export function nowLocalInput() {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
-}
 
 /** 'yyyy-MM-dd HH:mm:ss' → قيمة datetime-local */
 export function toLocalInput(s) { return String(s || '').slice(0, 16).replace(' ', 'T'); }
@@ -71,8 +70,9 @@ export function setBusy(button, busy, busyText) {
 }
 
 export function recordSummary(r) {
-  if (r.type === 'IN') return [r.supplier && t('المورد: {v}', { v: r.supplier }), r.doc_number && t('فاتورة: {v}', { v: r.doc_number })];
-  if (r.type === 'OUT') return [r.branch && t('الفرع: {v}', { v: r.branch }), r.doc_number && t('رقم الإذن: {v}', { v: r.doc_number })];
+  const source = INVOICE_LABELS[r.invoice_source] ? [INVOICE_LABELS[r.invoice_source]] : [];
+  if (r.type === 'IN') return [...source, r.supplier && t('المورد: {v}', { v: r.supplier }), r.doc_number && t('فاتورة: {v}', { v: r.doc_number })];
+  if (r.type === 'OUT') return [...source, r.branch && t('الفرع: {v}', { v: r.branch }), r.doc_number && t('رقم الإذن: {v}', { v: r.doc_number })];
   return [r.person_name && t('الشخص: {v}', { v: r.person_name })];
 }
 

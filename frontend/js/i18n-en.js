@@ -22,6 +22,13 @@ export const EN = {
   '(اختياري)': '(optional)',
 
   // أنواع السجلات
+  'فواتير العكر': 'Al Aker invoices',
+  'فواتير موردين': 'Supplier invoices',
+  'نوع الفاتورة': 'Invoice type',
+  'اختر نوع الفاتورة': 'Choose invoice type',
+  'كل الفواتير': 'All invoices',
+  'أو اختر من الجهاز': 'or choose from device',
+  'اختر نوع الفاتورة: فواتير العكر أو فواتير موردين.': 'Choose the invoice type: Al Aker invoices or supplier invoices.',
   'بضاعة داخلة': 'Incoming goods',
   'بضاعة خارجة': 'Outgoing goods',
   'مخالفات العمال': 'Worker incidents',
@@ -58,7 +65,6 @@ export const EN = {
   'لم يُضبط رابط الخادم بعد في الملف js/config.js.': 'The server URL is not set yet in js/config.js.',
 
   // نموذج السجل
-  'تاريخ ووقت الواقعة': 'Date and time of the incident',
   'التاريخ والوقت': 'Date and time',
   'اسم المورد': 'Supplier name',
   'الفرع المستلم': 'Receiving branch',
@@ -69,10 +75,8 @@ export const EN = {
   '(إن كان معروفًا)': '(if known)',
   'وصف مختصر': 'Short description',
   'ملاحظات': 'Notes',
-  'الصور': 'Photos',
   '(صورة واحدة على الأقل، حتى {n})': '(at least one, up to {n})',
   'التقاط صورة': 'Take photo',
-  'من الجهاز': 'From device',
   'يُسجَّل باسم:': 'Recorded as:',
   'حفظ السجل': 'Save record',
   'اختر الفرع': 'Choose a branch',
@@ -83,7 +87,6 @@ export const EN = {
   'حذف الصورة': 'Remove photo',
   'لم تُرفق صور بعد': 'No photos attached yet',
   'أرفق صورة واحدة على الأقل.': 'Attach at least one photo.',
-  'حدّد التاريخ والوقت.': 'Set the date and time.',
   'اختر الفرع المستلم.': 'Choose the receiving branch.',
   'اكتب وصفًا مختصرًا للواقعة.': 'Write a short description of the incident.',
   'جارٍ رفع الصور… {n} من {total}': 'Uploading photos… {n} of {total}',

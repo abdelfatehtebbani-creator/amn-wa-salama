@@ -107,6 +107,21 @@ textarea { resize: vertical; }
 
 /* الصور في النموذج */
 .photo-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+/* زر التصوير أول ما يظهر في نموذج السجل */
+.photos-first { display: grid; gap: 10px; }
+.camera-btn { width: 100%; padding: 22px 12px; font-size: 1.25rem; border-radius: var(--radius); }
+.gallery-btn { justify-self: center; }
+/* اختيار من زرين (نوع الفاتورة) */
+.segmented { border: 0; padding: 0; margin: 0 0 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.segmented legend { font-weight: 600; margin-bottom: 6px; padding: 0; }
+.segmented label { position: relative; }
+.segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+.segmented span {
+  display: block; text-align: center; padding: 14px 8px; border: 2px solid var(--border);
+  border-radius: var(--radius); background: var(--card); font-weight: 600; cursor: pointer;
+}
+.segmented input:checked + span { border-color: var(--primary); background: var(--info-bg); color: var(--primary); }
+.segmented input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
 .photo-buttons .btn { padding: 14px 8px; }
 .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
 .empty-thumbs { grid-column: 1 / -1; margin: 0; }

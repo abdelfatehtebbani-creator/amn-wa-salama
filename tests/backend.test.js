@@ -77,11 +77,15 @@ test('guard creates records with retry-safe uploads; admin searches and views', 
 
   const createParams = {
     request_id: rid, type: 'IN', event_at: '2025-01-05T09:30',
-    fields: { supplier: 'مورد السكر', doc_number: '00123', description: '=HYPERLINK("x")' }, image_indexes: [1, 2]
+    fields: { invoice_source: 'supplier', supplier: 'مورد السكر', doc_number: '00123', description: '=HYPERLINK("x")' }, image_indexes: [1, 2]
   };
+  // نوع الفاتورة إلزامي للبضاعة
+  const noSource = env.post({ action: 'createRecord', token: guard, params: { ...createParams, fields: { supplier: 'x' } } });
+  assert.equal(noSource.error, 'INVALID');
   const first = ok(env.post({ action: 'createRecord', token: guard, params: createParams }));
   assert.match(first.record.record_id, /^IN-\d{4}-00001$/);
   assert.equal(first.record.doc_number, '00123');
+  assert.equal(first.record.invoice_source, 'supplier');
   assert.equal(first.record.description, '=HYPERLINK("x")');
   const again = ok(env.post({ action: 'createRecord', token: guard, params: createParams }));
   assert.equal(again.duplicate, true);
@@ -95,9 +99,9 @@ test('guard creates records with retry-safe uploads; admin searches and views', 
 
   // بضاعة خارجة تتطلب فرعًا موجودًا
   ok(env.post({ action: 'uploadImage', token: guard, params: { request_id: 'req-out-0001', index: 1, type: 'OUT', mime: 'image/jpeg', data: JPEG } }));
-  const badBranch = env.post({ action: 'createRecord', token: guard, params: { request_id: 'req-out-0001', type: 'OUT', fields: { branch: 'غير موجود' }, image_indexes: [1] } });
+  const badBranch = env.post({ action: 'createRecord', token: guard, params: { request_id: 'req-out-0001', type: 'OUT', fields: { invoice_source: 'aker', branch: 'غير موجود' }, image_indexes: [1] } });
   assert.equal(badBranch.error, 'INVALID');
-  const out = ok(env.post({ action: 'createRecord', token: guard, params: { request_id: 'req-out-0001', type: 'OUT', fields: { branch: 'فرع الوسط' }, image_indexes: [1] } }));
+  const out = ok(env.post({ action: 'createRecord', token: guard, params: { request_id: 'req-out-0001', type: 'OUT', fields: { invoice_source: 'aker', branch: 'فرع الوسط' }, image_indexes: [1] } }));
   assert.match(out.record.record_id, /^OUT-\d{4}-00001$/);
 
   // مخالفة تتطلب وصفًا
@@ -116,6 +120,8 @@ test('guard creates records with retry-safe uploads; admin searches and views', 
   assert.equal(ok(env.post({ action: 'search', token: admin, params: { q: '00123' } })).total, 1);
   assert.equal(ok(env.post({ action: 'search', token: admin, params: { q: 'سمير' } })).records[0].type, 'INC');
   assert.equal(ok(env.post({ action: 'search', token: admin, params: { type: 'OUT' } })).total, 1);
+  assert.equal(ok(env.post({ action: 'search', token: admin, params: { invoice_source: 'aker' } })).total, 1);
+  assert.equal(ok(env.post({ action: 'search', token: admin, params: { invoice_source: 'supplier' } })).records[0].type, 'IN');
   assert.equal(ok(env.post({ action: 'search', token: admin, params: { from: '2025-01-01', to: '2025-01-31' } })).total, 1);
 
   const detail = ok(env.post({ action: 'getRecord', token: admin, params: { record_id: first.record.record_id } }));
@@ -128,6 +134,9 @@ test('guard creates records with retry-safe uploads; admin searches and views', 
   const edited = ok(env.post({ action: 'updateRecord', token: admin, params: { record_id: first.record.record_id, fields: { notes: 'تم التحقق' } } }));
   assert.equal(edited.record.notes, 'تم التحقق');
   assert.equal(edited.record.supplier, 'مورد السكر');
+  const switched = ok(env.post({ action: 'updateRecord', token: admin, params: { record_id: first.record.record_id, fields: { invoice_source: 'aker' } } }));
+  assert.equal(switched.record.invoice_source, 'aker');
+  assert.equal(env.post({ action: 'updateRecord', token: admin, params: { record_id: first.record.record_id, fields: { invoice_source: 'x' } } }).error, 'INVALID');
   ok(env.post({ action: 'deleteRecord', token: admin, params: { record_id: first.record.record_id } }));
   assert.equal(ok(env.post({ action: 'search', token: admin, params: {} })).total, 2);
   assert.equal(ok(env.post({ action: 'search', token: admin, params: { include_deleted: true } })).total, 3);

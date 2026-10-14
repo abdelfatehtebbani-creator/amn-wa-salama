@@ -3,13 +3,14 @@ import { call } from './api.js';
 import { base64ToBlob } from './images.js';
 import {
   esc, $, $$, render, shortDate, toLocalInput, toast, setBusy, confirmDialog,
-  TYPE_LABELS, TYPE_ICONS, recordSummary, errorBox
+  TYPE_LABELS, TYPE_ICONS, INVOICE_LABELS, recordSummary, errorBox
 } from './ui.js';
 import { openViewer } from './viewer.js';
 import { t, backArrow } from './i18n.js';
 
 // نحتفظ بالفلاتر والنتائج حتى يعود المستخدم إليها من صفحة السجل.
-const archive = { filters: { q: '', type: '', from: '', to: '', include_deleted: false }, records: [], total: 0, page: 0 };
+const EMPTY_FILTERS = { q: '', type: '', invoice_source: '', from: '', to: '', include_deleted: false };
+const archive = { filters: { ...EMPTY_FILTERS }, records: [], total: 0, page: 0 };
 
 /** «من سجّله — وظيفته». */
 function byLine(r) {
@@ -49,6 +50,12 @@ export function renderArchive() {
             <option value="">${t('كل الأنواع')}</option>
             ${Object.keys(TYPE_LABELS).map(type => `<option value="${type}" ${f.type === type ? 'selected' : ''}>${esc(TYPE_LABELS[type])}</option>`).join('')}
           </select>
+          <select name="invoice_source" aria-label="${t('نوع الفاتورة')}">
+            <option value="">${t('كل الفواتير')}</option>
+            ${Object.keys(INVOICE_LABELS).map(k => `<option value="${k}" ${f.invoice_source === k ? 'selected' : ''}>${esc(INVOICE_LABELS[k])}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-row">
           <label class="inline">${t('من')} <input type="date" name="from" value="${esc(f.from)}"></label>
           <label class="inline">${t('إلى')} <input type="date" name="to" value="${esc(f.to)}"></label>
         </div>
@@ -67,13 +74,14 @@ export function renderArchive() {
     const d = new FormData(form);
     archive.filters = {
       q: String(d.get('q') || '').trim(), type: String(d.get('type') || ''),
+      invoice_source: String(d.get('invoice_source') || ''),
       from: String(d.get('from') || ''), to: String(d.get('to') || ''),
       include_deleted: d.get('include_deleted') === 'on'
     };
     search(1);
   });
   $('#clear-filters', app).addEventListener('click', () => {
-    archive.filters = { q: '', type: '', from: '', to: '', include_deleted: false };
+    archive.filters = { ...EMPTY_FILTERS };
     renderArchive();
     search(1);
   });
@@ -166,6 +174,7 @@ function detailRows(r) {
   const rows = [
     [t('النوع'), esc(`${TYPE_ICONS[r.type]} ${TYPE_LABELS[r.type]}`)],
     [r.type === 'INC' ? t('تاريخ الواقعة') : t('التاريخ والوقت'), ltr(shortDate(r.event_at))],
+    r.type !== 'INC' && [t('نوع الفاتورة'), esc(INVOICE_LABELS[r.invoice_source] || '')],
     r.type === 'IN' && [t('المورد'), esc(r.supplier)],
     r.type === 'OUT' && [t('الفرع المستلم'), esc(r.branch)],
     r.type !== 'INC' && [r.type === 'IN' ? t('رقم الفاتورة') : t('رقم الفاتورة / الإذن'), esc(r.doc_number)],
@@ -266,6 +275,11 @@ function drawEdit(body, data) {
     <form id="edit-form">
       <label class="field"><span>${t('التاريخ والوقت')}</span>
         <input type="datetime-local" name="event_at" value="${esc(toLocalInput(r.event_at))}" required></label>
+      ${r.type !== 'INC' ? `<label class="field"><span>${t('نوع الفاتورة')}</span>
+        <select name="invoice_source" required>
+          <option value="">${t('اختر نوع الفاتورة')}</option>
+          ${Object.keys(INVOICE_LABELS).map(k => `<option value="${k}" ${r.invoice_source === k ? 'selected' : ''}>${esc(INVOICE_LABELS[k])}</option>`).join('')}
+        </select></label>` : ''}
       ${r.type === 'IN' ? field('supplier', t('المورد'), r.supplier, 'maxlength="120"') : ''}
       ${r.type === 'OUT' ? `<label class="field"><span>${t('الفرع المستلم')}</span>
         <select name="branch">${branches.map(b => `<option ${b === r.branch ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select></label>` : ''}

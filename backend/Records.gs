@@ -4,13 +4,13 @@
 
 /** الحقول النصية القابلة للإدخال وحدودها. */
 const FIELD_LIMITS = {
-  supplier: 120, branch: 120, person_name: 120, doc_number: 60, description: 500, notes: 1000
+  supplier: 120, branch: 120, person_name: 120, doc_number: 60, description: 500, notes: 1000, invoice_source: 20
 };
 
 /** الحقول المستخدمة في كل نوع. */
 const TYPE_FIELDS = {
-  IN: ['supplier', 'doc_number', 'description', 'notes'],
-  OUT: ['branch', 'doc_number', 'description', 'notes'],
+  IN: ['invoice_source', 'supplier', 'doc_number', 'description', 'notes'],
+  OUT: ['invoice_source', 'branch', 'doc_number', 'description', 'notes'],
   INC: ['person_name', 'description', 'notes']
 };
 
@@ -36,12 +36,19 @@ function activeBranchNames_() {
 function cleanFields_(type, input) {
   const out = {};
   TYPE_FIELDS[type].forEach(f => { out[f] = text_(input[f], FIELD_LIMITS[f]); });
+  checkInvoiceSource_(type, out);
   if (type === 'OUT') {
     if (!out.branch) throw appError_('INVALID', 'اختر الفرع المستلم.');
     if (activeBranchNames_().indexOf(out.branch) < 0) throw appError_('INVALID', 'الفرع غير موجود في القائمة.');
   }
   if (type === 'INC' && !out.description) throw appError_('INVALID', 'اكتب وصفًا مختصرًا للواقعة.');
   return out;
+}
+
+function checkInvoiceSource_(type, fields) {
+  if ((type === 'IN' || type === 'OUT') && !INVOICE_SOURCES[fields.invoice_source]) {
+    throw appError_('INVALID', 'اختر نوع الفاتورة: فواتير العكر أو فواتير موردين.');
+  }
 }
 
 function eventDate_(input) {
@@ -57,7 +64,7 @@ function publicRecord_(r) {
   return {
     record_id: r.record_id, type: r.type, type_label: (RECORD_TYPES[r.type] || {}).label || r.type,
     event_at: r.event_at, created_at: r.created_at, created_by: r.created_by, created_by_role: r.created_by_role,
-    supplier: r.supplier, branch: r.branch, person_name: r.person_name, doc_number: r.doc_number,
+    invoice_source: r.invoice_source || '', supplier: r.supplier, branch: r.branch, person_name: r.person_name, doc_number: r.doc_number,
     description: r.description, notes: r.notes, file_count: num_(r.file_count), status: r.status,
     updated_at: r.updated_at, updated_by: r.updated_by
   };
@@ -126,11 +133,12 @@ function myToday_(ctx) {
 
 /**
  * بحث الأرشيف (الإدارة فقط).
- * p: { q, type, from: 'yyyy-MM-dd', to: 'yyyy-MM-dd', include_deleted, page }
+ * p: { q, type, invoice_source, from: 'yyyy-MM-dd', to: 'yyyy-MM-dd', include_deleted, page }
  */
 function searchRecords_(ctx, p) {
   const q = text_(p.q, 100).toLowerCase();
   const type = RECORD_TYPES[p.type] ? p.type : '';
+  const source = INVOICE_SOURCES[p.invoice_source] ? p.invoice_source : '';
   const from = /^\d{4}-\d{2}-\d{2}$/.test(p.from || '') ? p.from : '';
   const to = /^\d{4}-\d{2}-\d{2}$/.test(p.to || '') ? p.to : '';
   const page = Math.max(1, Math.floor(num_(p.page) || 1));
@@ -138,6 +146,7 @@ function searchRecords_(ctx, p) {
   const results = readAll_('Records').filter(r => {
     if (!p.include_deleted && r.status !== 'active') return false;
     if (type && r.type !== type) return false;
+    if (source && r.invoice_source !== source) return false;
     const day = r.event_at.slice(0, 10);
     if (from && day < from) return false;
     if (to && day > to) return false;
@@ -192,6 +201,7 @@ function cleanFieldsForEdit_(record, input) {
   if (record.type === 'OUT' && input.branch === record.branch) {
     const out = {};
     TYPE_FIELDS.OUT.forEach(f => { out[f] = text_(input[f], FIELD_LIMITS[f]); });
+    checkInvoiceSource_('OUT', out);
     return out;
   }
   return cleanFields_(record.type, input);
