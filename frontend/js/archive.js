@@ -20,7 +20,7 @@ function recordCard(r, link = true) {
     <div class="card-date">${esc(shortDate(r.event_at))}</div>
     ${lines.map(l => `<div>${esc(l)}</div>`).join('')}
     ${r.description ? `<div class="muted clamp">${esc(r.description)}</div>` : ''}
-    <div class="card-foot">📎 ${r.file_count} · ${esc(r.created_by)}${r.status === 'deleted' ? ' · <span class="danger">محذوف</span>' : ''}</div>`;
+    <div class="card-foot">📎 ${r.file_count} · ${esc([r.created_by, r.created_by_role].filter(Boolean).join(' — '))}${r.status === 'deleted' ? ' · <span class="danger">محذوف</span>' : ''}</div>`;
   return link
     ? `<a class="record-card" href="#/record/${encodeURIComponent(r.record_id)}">${inner}</a>`
     : `<div class="record-card">${inner}</div>`;
@@ -166,7 +166,7 @@ function detailRows(r) {
     r.type === 'INC' && ['الشخص المعني', esc(r.person_name)],
     ['الوصف', esc(r.description)],
     ['ملاحظات', esc(r.notes)],
-    ['سجّله', `${esc(r.created_by)} · ${ltr(shortDate(r.created_at))}`],
+    ['سجّله', `${esc([r.created_by, r.created_by_role].filter(Boolean).join(' — '))} · ${ltr(shortDate(r.created_at))}`],
     r.updated_at && ['آخر تعديل', `${esc(r.updated_by)} · ${ltr(shortDate(r.updated_at))}`],
     r.status === 'deleted' && ['الحالة', '<span class="danger">محذوف</span>']
   ].filter(Boolean);

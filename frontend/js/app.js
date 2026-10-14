@@ -77,7 +77,7 @@ function renderHome(user) {
       <header class="top-bar">
         <div>
           <strong>${esc(APP_NAME)}</strong>
-          <div class="muted small">${esc(user.display_name)} · ${esc(user.role_name)}</div>
+          <div class="muted small">${esc([user.display_name, user.function_name || user.access_name || user.role_name].filter(Boolean).join(' · '))}</div>
         </div>
         <div class="top-actions">
           ${user.is_admin ? '<a class="btn small secondary" href="#/settings" aria-label="الإعدادات">⚙️</a>' : ''}

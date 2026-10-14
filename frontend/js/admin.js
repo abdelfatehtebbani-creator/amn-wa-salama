@@ -1,6 +1,8 @@
-// الإعدادات (للإدارة): الفروع والمستخدمون.
+// الإعدادات (للإدارة): الفروع، الوظائف، المستخدمون.
 import { call } from './api.js';
-import { esc, $, $$, render, toast, setBusy, confirmDialog, errorBox, shortDate } from './ui.js';
+import { esc, $, $$, render, toast, setBusy, confirmDialog, errorBox, shortDate, TYPE_LABELS } from './ui.js';
+
+const ACCESS = { admin: 'إدارة', user: 'مستخدم' };
 
 export function renderSettings(user) {
   const app = render(`
@@ -17,6 +19,19 @@ export function renderSettings(user) {
         <button type="submit" class="btn primary">إضافة</button>
       </form>
 
+      <h2 class="section-title">الوظائف</h2>
+      <p class="muted small">لكل وظيفة أنواع السجلات التي يستطيع صاحبها تسجيلها.</p>
+      <div id="functions"><p class="muted">…جارٍ التحميل</p></div>
+      <details class="panel">
+        <summary>➕ إضافة وظيفة</summary>
+        <form id="function-form">
+          <label class="field"><span>اسم الوظيفة</span>
+            <input type="text" name="name" maxlength="60" required placeholder="مثلًا: مراقب الجودة"></label>
+          <div class="field"><span>يستطيع تسجيل</span><div class="type-checks"></div></div>
+          <button type="submit" class="btn primary">إضافة الوظيفة</button>
+        </form>
+      </details>
+
       <h2 class="section-title">المستخدمون</h2>
       <div id="users"><p class="muted">…جارٍ التحميل</p></div>
       <details class="panel">
@@ -26,7 +41,7 @@ export function renderSettings(user) {
             <input type="text" name="username" required pattern="[a-z0-9._\\-]{3,40}" autocapitalize="off" autocomplete="off" dir="ltr"></label>
           <label class="field"><span>الاسم الظاهر</span>
             <input type="text" name="display_name" maxlength="60" required></label>
-          <label class="field"><span>الدور</span><select name="role" id="role-select"></select></label>
+          <div class="access-fields"></div>
           <label class="field"><span>كلمة مرور مؤقتة (6 أحرف على الأقل)</span>
             <input type="text" name="password" minlength="6" required autocomplete="off" dir="ltr"></label>
           <p class="muted">سيُطلب من المستخدم تغييرها عند أول دخول.</p>
@@ -35,7 +50,7 @@ export function renderSettings(user) {
       </details>
     </section>`);
 
-  const ctx = { user, roles: [], users: [], branches: [] };
+  const ctx = { user, roles: [], users: [], branches: [], types: [] };
   loadBranches(ctx);
   loadUsers(ctx);
 
@@ -57,6 +72,23 @@ export function renderSettings(user) {
     }
   });
 
+  $('#function-form', app).addEventListener('submit', async e => {
+    e.preventDefault();
+    const form = e.target;
+    const btn = form.querySelector('button');
+    setBusy(btn, true);
+    try {
+      applyRoles(ctx, await call('saveRole', { name: form.elements.name.value.trim(), can_create: checkedTypes(form) }));
+      form.reset();
+      form.closest('details').open = false;
+      toast('تمت إضافة الوظيفة.', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setBusy(btn, false);
+    }
+  });
+
   $('#user-form', app).addEventListener('submit', async e => {
     e.preventDefault();
     const form = e.target;
@@ -67,6 +99,7 @@ export function renderSettings(user) {
       const { users } = await call('saveUser', d);
       ctx.users = users;
       form.reset();
+      drawAccessFields(ctx, $('.access-fields', form));
       form.closest('details').open = false;
       drawUsers(ctx);
       toast('تم إنشاء الحساب.', 'success');
@@ -77,6 +110,8 @@ export function renderSettings(user) {
     }
   });
 }
+
+// ---------- الفروع ----------
 
 async function loadBranches(ctx) {
   const box = document.getElementById('branches');
@@ -111,35 +146,131 @@ function drawBranches(ctx) {
   }));
 }
 
+// ---------- الوظائف ----------
+
+/** الوظائف العادية فقط (دور «الإدارة» الداخلي لا يظهر كوظيفة). */
+function functions(ctx) { return ctx.roles.filter(r => !r.is_admin); }
+
+function typeChecks(ctx, selected = []) {
+  return ctx.types.map(t => `
+    <label class="check inline-check"><input type="checkbox" name="can_create" value="${t.type}" ${selected.includes(t.type) ? 'checked' : ''}> ${esc(t.label)}</label>`).join('');
+}
+
+function checkedTypes(form) {
+  return $$('input[name="can_create"]:checked', form).map(i => i.value);
+}
+
+function applyRoles(ctx, data) {
+  ctx.roles = data.roles;
+  ctx.types = data.record_types;
+  drawFunctions(ctx);
+  const checks = document.querySelector('#function-form .type-checks');
+  if (checks) checks.innerHTML = typeChecks(ctx);
+  const fields = document.querySelector('#user-form .access-fields');
+  if (fields) drawAccessFields(ctx, fields);
+}
+
+function drawFunctions(ctx) {
+  const box = document.getElementById('functions');
+  if (!box) return;
+  const list = functions(ctx);
+  box.innerHTML = list.length
+    ? `<ul class="list">${list.map(r => `
+        <li>
+          <div><strong>${esc(r.name)}</strong><br>
+            <small class="muted">${r.can_create.map(t => esc(TYPE_LABELS[t] || t)).join(' · ')}</small></div>
+          <button type="button" class="btn small secondary" data-edit-role="${esc(r.role_id)}">تعديل</button>
+        </li>`).join('')}</ul>`
+    : '<p class="muted">لا توجد وظائف بعد.</p>';
+  $$('[data-edit-role]', box).forEach(btn => btn.addEventListener('click', () => {
+    const r = ctx.roles.find(x => x.role_id === btn.dataset.editRole);
+    const li = btn.closest('li');
+    li.innerHTML = `
+      <form class="edit-inline">
+        <input type="text" name="name" value="${esc(r.name)}" maxlength="60" required aria-label="اسم الوظيفة">
+        <div class="type-checks">${typeChecks(ctx, r.can_create)}</div>
+        <div class="user-actions">
+          <button type="button" class="btn small secondary" data-cancel>إلغاء</button>
+          <button type="submit" class="btn small primary">حفظ</button>
+        </div>
+      </form>`;
+    const form = $('form', li);
+    $('[data-cancel]', form).addEventListener('click', () => drawFunctions(ctx));
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const save = form.querySelector('[type=submit]');
+      setBusy(save, true);
+      try {
+        applyRoles(ctx, await call('saveRole', { role_id: r.role_id, name: form.elements.name.value.trim(), can_create: checkedTypes(form) }));
+        drawUsers(ctx);
+        toast('تم حفظ الوظيفة.', 'success');
+      } catch (err) {
+        setBusy(save, false);
+        toast(err.message, 'error');
+      }
+    });
+  }));
+}
+
+// ---------- المستخدمون ----------
+
+/** حقلا «الصلاحية» و«الوظيفة». الوظيفة إلزامية للمستخدم واختيارية للإدارة. */
+function drawAccessFields(ctx, box, current = { access: 'user', role: '' }) {
+  const list = functions(ctx);
+  box.innerHTML = `
+    <label class="field"><span>الصلاحية</span>
+      <select name="access">
+        <option value="user" ${current.access === 'user' ? 'selected' : ''}>مستخدم: يسجّل فقط</option>
+        <option value="admin" ${current.access === 'admin' ? 'selected' : ''}>إدارة: الأرشيف والإعدادات وكل الأنواع</option>
+      </select></label>
+    <label class="field"><span>الوظيفة <small data-optional hidden>(اختيارية للإدارة)</small></span>
+      <select name="role">
+        <option value="" data-none>— بدون وظيفة —</option>
+        ${list.map(r => `<option value="${esc(r.role_id)}" ${r.role_id === current.role ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
+      </select></label>`;
+  const access = $('select[name="access"]', box);
+  const sync = () => {
+    const isAdmin = access.value === 'admin';
+    $('[data-optional]', box).hidden = !isAdmin;
+    $('[data-none]', box).hidden = !isAdmin;
+    const role = $('select[name="role"]', box);
+    role.required = !isAdmin;
+    if (!isAdmin && !role.value && list[0]) role.value = list[0].role_id;
+  };
+  access.addEventListener('change', sync);
+  sync();
+}
+
 async function loadUsers(ctx) {
   const box = document.getElementById('users');
   try {
     const [rolesData, usersData] = await Promise.all([call('roles'), call('users')]);
-    ctx.roles = rolesData.roles;
     ctx.users = usersData.users;
-    const select = document.getElementById('role-select');
-    if (select) select.innerHTML = ctx.roles.map(r => `<option value="${esc(r.role_id)}">${esc(r.name)}</option>`).join('');
+    applyRoles(ctx, rolesData);
     drawUsers(ctx);
   } catch (err) {
     if (box) box.innerHTML = errorBox(err.message);
   }
 }
 
-function roleName(ctx, id) { return ctx.roles.find(r => r.role_id === id)?.name || id; }
+function userLabel(u) {
+  return [ACCESS[u.access] || u.access, u.role_name].filter(Boolean).join(' · ');
+}
 
 function drawUsers(ctx) {
   const box = document.getElementById('users');
   if (!box) return;
   box.innerHTML = `<ul class="list users">${ctx.users.map(u => `
-    <li class="${u.active ? '' : 'inactive'}">
+    <li class="${u.active ? '' : 'inactive'}" data-user="${esc(u.username)}">
       <div>
         <strong>${esc(u.display_name)}</strong> <span class="muted" dir="ltr">${esc(u.username)}</span><br>
-        <small class="muted">${esc(roleName(ctx, u.role))}
+        <small class="muted">${esc(userLabel(u))}
           ${u.active ? '' : ' · موقوف'}${u.locked ? ' · مقفل مؤقتًا' : ''}
           ${u.last_login_at ? ' · آخر دخول ' + esc(shortDate(u.last_login_at)) : ''}</small>
       </div>
       ${u.username === ctx.user.username ? '<small class="muted">(أنت)</small>' : `
       <div class="user-actions">
+        <button type="button" class="btn small secondary" data-act="edit" data-u="${esc(u.username)}">تعديل</button>
         <button type="button" class="btn small secondary" data-act="reset" data-u="${esc(u.username)}">كلمة مرور جديدة</button>
         <button type="button" class="btn small secondary" data-act="sessions" data-u="${esc(u.username)}">إنهاء الجلسات</button>
         <button type="button" class="btn small ${u.active ? 'danger' : 'secondary'}" data-act="active" data-u="${esc(u.username)}">${u.active ? 'إيقاف' : 'تفعيل'}</button>
@@ -149,6 +280,10 @@ function drawUsers(ctx) {
   $$('[data-act]', box).forEach(btn => btn.addEventListener('click', async () => {
     const u = ctx.users.find(x => x.username === btn.dataset.u);
     try {
+      if (btn.dataset.act === 'edit') {
+        editUser(ctx, btn.closest('li'), u);
+        return;
+      }
       if (btn.dataset.act === 'reset') {
         const pw = window.prompt(`كلمة مرور مؤقتة جديدة لـ «${u.display_name}» (6 أحرف على الأقل):`);
         if (!pw) return;
@@ -165,7 +300,7 @@ function drawUsers(ctx) {
       if (btn.dataset.act === 'active') {
         if (u.active && !(await confirmDialog(`إيقاف حساب «${u.display_name}»؟ لن يتمكن من الدخول.`))) return;
         setBusy(btn, true);
-        ctx.users = (await call('saveUser', { ...u, existing: true, active: !u.active })).users;
+        ctx.users = (await call('saveUser', { ...userPayload(ctx, u), active: !u.active })).users;
         drawUsers(ctx);
         return;
       }
@@ -174,6 +309,46 @@ function drawUsers(ctx) {
     }
     setBusy(btn, false);
   }));
+}
+
+/** بيانات التعديل: وظيفة الإدارة الداخلية لا تُرسل كوظيفة. */
+function userPayload(ctx, u) {
+  const isFunction = functions(ctx).some(r => r.role_id === u.role);
+  return {
+    username: u.username, display_name: u.display_name, access: u.access,
+    role: isFunction ? u.role : '', active: u.active, existing: true
+  };
+}
+
+function editUser(ctx, li, u) {
+  const base = userPayload(ctx, u);
+  li.innerHTML = `
+    <form class="edit-inline">
+      <label class="field"><span>الاسم الظاهر</span>
+        <input type="text" name="display_name" value="${esc(u.display_name)}" maxlength="60" required></label>
+      <div class="access-fields"></div>
+      <div class="user-actions">
+        <button type="button" class="btn small secondary" data-cancel>إلغاء</button>
+        <button type="submit" class="btn small primary">حفظ</button>
+      </div>
+    </form>`;
+  const form = $('form', li);
+  drawAccessFields(ctx, $('.access-fields', form), base);
+  $('[data-cancel]', form).addEventListener('click', () => drawUsers(ctx));
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(form).entries());
+    const save = form.querySelector('[type=submit]');
+    setBusy(save, true);
+    try {
+      ctx.users = (await call('saveUser', { ...base, ...d })).users;
+      drawUsers(ctx);
+      toast('تم حفظ التعديل. سيُطلب من المستخدم الدخول من جديد إن تغيّرت صلاحيته أو وظيفته.', 'success');
+    } catch (err) {
+      setBusy(save, false);
+      toast(err.message, 'error');
+    }
+  });
 }
 
 /** تغيير كلمة المرور الخاصة (لكل المستخدمين). */

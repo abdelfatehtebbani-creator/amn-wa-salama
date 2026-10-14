@@ -57,6 +57,16 @@ async function forcedChange(page, oldPw, newPw) {
     await page.fill('#branch-form input[name=name]', 'فرع باب الوادي');
     await page.click('#branch-form button');
     await page.waitForSelector('#branches li');
+    // مستخدم جديد: الصلاحية «مستخدم» والوظيفة «سلامة الغذاء»
+    await page.waitForSelector('#user-form select[name=role] option:nth-child(2)', { state: 'attached' });
+    await page.locator('details:has(#user-form) summary').click();
+    await page.fill('#user-form input[name=username]', 'food1');
+    await page.fill('#user-form input[name=display_name]', 'مراقب الغذاء');
+    await page.selectOption('#user-form select[name=access]', 'user');
+    await page.selectOption('#user-form select[name=role]', { label: 'سلامة الغذاء' });
+    await page.fill('#user-form input[name=password]', 'food-temp-1');
+    await page.click('#user-form button[type=submit]');
+    await page.waitForSelector('#users >> text=مراقب الغذاء');
     await shot(page, '03-settings');
 
     // بضاعة داخلة بصورتين
@@ -158,6 +168,18 @@ async function forcedChange(page, oldPw, newPw) {
     await page2.goto(base);
     await page2.waitForSelector('.tiles');
     await page2.close();
+
+    // ---- سلامة الغذاء: يرى المخالفات فقط ----
+    await page.goto(base + '#/home');
+    await page.click('#logout-btn');
+    await page.waitForSelector('#login-form');
+    await login(page, 'food1', 'food-temp-1');
+    await forcedChange(page, 'food-temp-1', 'food-pass-1');
+    assert.equal(await page.locator('a[href="#/new/INC"]').count(), 1);
+    assert.equal(await page.locator('a[href="#/new/IN"]').count(), 0);
+    assert.equal(await page.locator('a[href="#/new/OUT"]').count(), 0);
+    assert.equal(await page.locator('.top-bar >> text=سلامة الغذاء').count(), 1);
+    await shot(page, '13-home-food-safety');
 
     assert.deepEqual(errors, [], 'no page errors');
     console.log('E2E OK');

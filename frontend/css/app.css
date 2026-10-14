@@ -230,3 +230,8 @@ body.viewer-open { overflow: hidden; }
 @media (min-width: 640px) {
   .tiles { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* اختيار أنواع السجلات للوظيفة، والتعديل داخل القائمة */
+.type-checks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.check.inline-check { margin: 4px 0; }
+.edit-inline { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border, #ccd); }

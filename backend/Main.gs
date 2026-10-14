@@ -27,7 +27,8 @@ const ACTIONS = {
   restoreRecord:    { fn: (ctx, p) => setRecordStatus_(ctx, p, 'active'), auth: true, admin: true, write: true },
 
   saveBranch:       { fn: saveBranch_, auth: true, admin: true, write: true },
-  roles:            { fn: listRoles_, auth: true, admin: true },
+  roles:            { fn: listRoles_, auth: true, admin: true, write: true },
+  saveRole:         { fn: saveRole_, auth: true, admin: true, write: true },
   users:            { fn: listUsers_, auth: true, admin: true },
   saveUser:         { fn: saveUser_, auth: true, admin: true, write: true },
   resetPassword:    { fn: resetPassword_, auth: true, admin: true, write: true },

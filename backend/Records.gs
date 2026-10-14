@@ -56,7 +56,7 @@ function eventDate_(input) {
 function publicRecord_(r) {
   return {
     record_id: r.record_id, type: r.type, type_label: (RECORD_TYPES[r.type] || {}).label || r.type,
-    event_at: r.event_at, created_at: r.created_at, created_by: r.created_by,
+    event_at: r.event_at, created_at: r.created_at, created_by: r.created_by, created_by_role: r.created_by_role,
     supplier: r.supplier, branch: r.branch, person_name: r.person_name, doc_number: r.doc_number,
     description: r.description, notes: r.notes, file_count: num_(r.file_count), status: r.status,
     updated_at: r.updated_at, updated_by: r.updated_by
@@ -107,7 +107,8 @@ function createRecord_(ctx, p) {
   const record = Object.assign({
     record_id: recordId, type: p.type, event_at: fmtDate_(eventAt), created_at: now,
     created_by: ctx.username, file_ids: chosen.map(f => f.drive_file_id).join(','),
-    file_count: chosen.length, status: 'active', updated_at: '', updated_by: '', request_id: requestId
+    file_count: chosen.length, status: 'active', updated_at: '', updated_by: '', request_id: requestId,
+    created_by_role: ctx.function_name || ctx.access_name
   }, fields);
   appendObj_('Records', record);
   audit_(ctx.username, 'create', recordId, { files: chosen.length });

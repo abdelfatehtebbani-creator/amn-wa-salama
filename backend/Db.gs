@@ -15,9 +15,18 @@ function db_() {
   return spreadsheet_;
 }
 
+const checkedHeaders_ = {};
+
 function sheet_(name) {
   const sh = db_().getSheetByName(name);
   if (!sh) throw appError_('SERVER', 'ورقة مفقودة في قاعدة البيانات: ' + name);
+  if (!checkedHeaders_[name]) {
+    // أعمدة أُضيفت في إصدارات لاحقة تُكتب في صف العناوين تلقائيًا
+    const cols = SCHEMA[name].length;
+    const header = sh.getRange(1, 1, 1, cols).getValues()[0].map(String);
+    if (header.join('|') !== SCHEMA[name].join('|')) sh.getRange(1, 1, 1, cols).setValues([SCHEMA[name]]);
+    checkedHeaders_[name] = true;
+  }
   return sh;
 }
 

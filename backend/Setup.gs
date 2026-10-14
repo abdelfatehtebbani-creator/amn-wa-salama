@@ -6,7 +6,7 @@
  *  - المجلد الرئيسي في Drive والمجلدات الفرعية لكل نوع ومجلد _System
  *  - ملف Sheets بكل الأوراق والأعمدة
  *  - السر العام لتجزئة كلمات المرور (في Script Properties)
- *  - دوري «الإدارة» و«الحارس»
+ *  - دور «الإدارة» ووظيفتي «حارس» و«سلامة الغذاء»
  *  - حسابي admin وguard بكلمات مرور مؤقتة تظهر في سجل التنفيذ (Execution log)
  *  - مشغّل التنظيف اليومي
  */
@@ -56,16 +56,16 @@ function setup() {
   // الأدوار
   if (!readAll_('Roles').length) {
     appendObj_('Roles', { role_id: 'admin', name: 'الإدارة', can_create: 'IN,OUT,INC', is_admin: true, notes: 'كل الصلاحيات' });
-    appendObj_('Roles', { role_id: 'guard', name: 'الحارس', can_create: 'IN,OUT,INC', is_admin: false, notes: 'تسجيل السجلات ورفع الصور' });
   }
+  ensureDefaultFunctions_();
 
   // الحسابات المبدئية
   const created = [];
   if (!readAll_('Users').length) {
-    [['admin', 'الإدارة', 'admin'], ['guard', 'الحارس', 'guard']].forEach(u => {
+    [['admin', 'الإدارة', 'admin', 'admin'], ['guard', 'الحارس', 'guard', 'user']].forEach(u => {
       const password = tempPassword_();
       appendObj_('Users', Object.assign({
-        username: u[0], display_name: u[1], role: u[2], active: true, must_change: true,
+        username: u[0], display_name: u[1], role: u[2], access: u[3], active: true, must_change: true,
         failed_attempts: 0, locked_until: '', created_at: nowStr_(), last_login_at: ''
       }, setPasswordFields_(password)));
       created.push(u[0] + '  /  ' + password);

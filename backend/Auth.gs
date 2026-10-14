@@ -32,9 +32,16 @@ function getRole_(roleId) {
 }
 
 /** يبني «سياق المستخدم» الذي تعتمد عليه كل فحوص الصلاحيات. */
+/** الصلاحية: من عمود access، أو من الدور في البيانات القديمة قبل إضافة العمود. */
+function userAccess_(user, role) {
+  if (user.access === 'admin' || user.access === 'user') return user.access;
+  return bool_(role.is_admin) ? 'admin' : 'user';
+}
+
 function buildContext_(user) {
   const role = getRole_(user.role);
-  const isAdmin = bool_(role.is_admin);
+  const access = userAccess_(user, role);
+  const isAdmin = access === 'admin';
   const canCreate = isAdmin
     ? Object.keys(RECORD_TYPES)
     : String(role.can_create || '').split(',').map(s => s.trim()).filter(t => RECORD_TYPES[t]);
@@ -43,6 +50,9 @@ function buildContext_(user) {
     display_name: user.display_name || user.username,
     role_id: role.role_id,
     role_name: role.name,
+    function_name: bool_(role.is_admin) ? '' : role.name,
+    access: access,
+    access_name: ACCESS_LEVELS[access],
     is_admin: isAdmin,
     can_create: canCreate,
     must_change: bool_(user.must_change)
@@ -52,7 +62,8 @@ function buildContext_(user) {
 function publicUser_(ctx) {
   return {
     username: ctx.username, display_name: ctx.display_name, role_id: ctx.role_id,
-    role_name: ctx.role_name, is_admin: ctx.is_admin, can_create: ctx.can_create,
+    role_name: ctx.role_name, function_name: ctx.function_name, access: ctx.access, access_name: ctx.access_name,
+    is_admin: ctx.is_admin, can_create: ctx.can_create,
     must_change: ctx.must_change
   };
 }

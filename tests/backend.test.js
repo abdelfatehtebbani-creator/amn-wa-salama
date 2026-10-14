@@ -44,7 +44,7 @@ test('setup creates folders, sheets, roles and two users', () => {
   // setup مرة ثانية لا يكرر شيئًا
   env.run('setup()');
   assert.equal(env.sheet('Users').length, 3);
-  assert.equal(env.sheet('Roles').length, 3);
+  assert.equal(env.sheet('Roles').length, 4); // admin + حارس + سلامة الغذاء
 });
 
 test('login failures lock the account after 5 attempts', () => {
@@ -138,16 +138,63 @@ test('guard creates records with retry-safe uploads; admin searches and views', 
   assert.equal(env.post({ action: 'myToday', token: guard }).error, 'AUTH');
 });
 
-test('admin can add a new role-based user (e.g. food safety)', () => {
+test('access level (admin/user) and function (guard, food safety...) for users', () => {
   const { env, creds } = setup();
   const admin = loginReady(env, 'admin', creds.admin);
-  // دور جديد يُضاف من ورقة Roles مباشرة
-  env.run(`appendObj_('Roles', { role_id: 'food_safety', name: 'مسؤول سلامة الغذاء', can_create: 'INC', is_admin: false })`);
-  ok(env.post({ action: 'saveUser', token: admin, params: { username: 'food1', display_name: 'سلامة الغذاء', role: 'food_safety', password: 'temp123' } }));
+
+  const roles = ok(env.post({ action: 'roles', token: admin })).roles;
+  const food = roles.find(r => r.role_id === 'food_safety');
+  assert.deepEqual(food.can_create, ['INC']);
+
+  // مستخدم بوظيفة سلامة الغذاء: يسجّل المخالفات فقط
+  ok(env.post({ action: 'saveUser', token: admin, params: { username: 'food1', display_name: 'سلامة الغذاء', access: 'user', role: 'food_safety', password: 'temp123' } }));
   const t = loginReady(env, 'food1', 'temp123');
-  const me = ok(env.post({ action: 'me', token: t }));
-  assert.deepEqual(me.user.can_create, ['INC']);
+  const me = ok(env.post({ action: 'me', token: t })).user;
+  assert.deepEqual(me.can_create, ['INC']);
+  assert.equal(me.access, 'user');
+  assert.equal(me.is_admin, false);
   assert.equal(env.post({ action: 'uploadImage', token: t, params: { request_id: 'req-food-001', index: 1, type: 'IN', mime: 'image/jpeg', data: JPEG } }).error, 'FORBIDDEN');
+  ok(env.post({ action: 'uploadImage', token: t, params: { request_id: 'req-food-002', index: 1, type: 'INC', mime: 'image/jpeg', data: JPEG } }));
+  const rec = ok(env.post({ action: 'createRecord', token: t, params: { request_id: 'req-food-002', type: 'INC', fields: { description: 'نظافة' }, image_indexes: [1] } })).record;
+  assert.equal(rec.created_by_role, 'سلامة الغذاء');
+  assert.equal(env.post({ action: 'search', token: t, params: {} }).error, 'FORBIDDEN');
+
+  // مستخدم دون وظيفة مرفوض، ووظيفة الإدارة لا تصلح لمستخدم
+  assert.equal(env.post({ action: 'saveUser', token: admin, params: { username: 'x1', access: 'user', password: 'temp123' } }).error, 'INVALID');
+  assert.equal(env.post({ action: 'saveUser', token: admin, params: { username: 'x1', access: 'user', role: 'admin', password: 'temp123' } }).error, 'INVALID');
+
+  // إدارة بوظيفة: ترى الأرشيف وتسجّل كل الأنواع
+  ok(env.post({ action: 'saveUser', token: admin, params: { username: 'boss', display_name: 'مدير', access: 'admin', role: 'food_safety', password: 'temp123' } }));
+  const b = loginReady(env, 'boss', 'temp123');
+  const bm = ok(env.post({ action: 'me', token: b })).user;
+  assert.equal(bm.is_admin, true);
+  assert.deepEqual(bm.can_create, ['IN', 'OUT', 'INC']);
+  ok(env.post({ action: 'search', token: b, params: {} }));
+
+  // وظيفة جديدة من الإعدادات، ثم ترقية مستخدم إلى إدارة تنهي جلساته
+  const added = ok(env.post({ action: 'saveRole', token: admin, params: { name: 'مراقب الجودة', can_create: ['IN', 'INC'] } })).roles;
+  const qc = added.find(r => r.name === 'مراقب الجودة');
+  assert.deepEqual(qc.can_create, ['IN', 'INC']);
+  assert.equal(env.post({ action: 'saveRole', token: admin, params: { name: 'فارغة', can_create: [] } }).error, 'INVALID');
+  ok(env.post({ action: 'saveUser', token: admin, params: { username: 'food1', display_name: 'سلامة الغذاء', access: 'admin', role: 'food_safety', active: true, existing: true } }));
+  assert.equal(env.post({ action: 'me', token: t }).error, 'AUTH');
+  const list = ok(env.post({ action: 'users', token: admin })).users;
+  assert.equal(list.find(u => u.username === 'food1').access, 'admin');
+  assert.equal(list.find(u => u.username === 'guard').access, 'user');
+  // لا يستطيع المدير تغيير صلاحيته بنفسه
+  assert.equal(env.post({ action: 'saveUser', token: admin, params: { username: 'admin', access: 'user', role: 'guard', existing: true } }).error, 'INVALID');
+});
+
+test('older users without the access column keep their access', () => {
+  const { env, creds } = setup();
+  // محاكاة بيانات الإصدار الأول: عمود access فارغ
+  env.sheet('Users').slice(1).forEach(row => { row[11] = ''; });
+  const admin = loginReady(env, 'admin', creds.admin);
+  assert.equal(ok(env.post({ action: 'me', token: admin })).user.is_admin, true);
+  const guard = loginReady(env, 'guard', creds.guard);
+  const g = ok(env.post({ action: 'me', token: guard })).user;
+  assert.equal(g.is_admin, false);
+  assert.deepEqual(g.can_create, ['IN', 'OUT', 'INC']);
 });
 
 test('cleanup trashes stale pending uploads and expired sessions', () => {
