@@ -1,4 +1,5 @@
 // ضغط الصور قبل الرفع، وتحويلها لـ base64.
+import { t } from './i18n.js';
 
 const MAX_DIMENSION = 1600;
 const JPEG_QUALITY = 0.8;
@@ -31,7 +32,7 @@ export async function compressImage(file) {
     if (!blob) throw new Error('encode');
     return blob;
   } catch {
-    throw new Error('تعذّر قراءة الصورة. جرّب صورة أخرى أو التقطها بالكاميرا.');
+    throw new Error(t('تعذّر قراءة الصورة. جرّب صورة أخرى أو التقطها بالكاميرا.'));
   } finally {
     URL.revokeObjectURL(url);
   }

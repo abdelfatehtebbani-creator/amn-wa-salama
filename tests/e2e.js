@@ -181,6 +181,31 @@ async function forcedChange(page, oldPw, newPw) {
     assert.equal(await page.locator('.top-bar >> text=سلامة الغذاء').count(), 1);
     await shot(page, '13-home-food-safety');
 
+    // ---- الإنجليزية ----
+    await page.click('[data-lang=en]');
+    await page.waitForSelector('html[dir=ltr]');
+    assert.equal(await page.locator('.tile >> text=Worker incidents').count(), 1);
+    assert.equal(await page.locator('.top-bar >> text=Food safety').count(), 1);
+    await shot(page, '14-home-en');
+    await page.click('#logout-btn');
+    await page.waitForSelector('#login-form >> text=Sign in');
+    await login(page, 'admin', 'wrong-password');
+    await page.waitForSelector('#login-status >> text=Wrong username or password.');
+    await login(page, 'admin', 'admin-pass-1');
+    await page.waitForSelector('.tiles');
+    await page.click('a[href="#/archive"]');
+    await page.waitForSelector('.record-card');
+    await shot(page, '15-archive-en');
+    await page.click('.record-card');
+    await page.waitForSelector('.details >> text=Recorded by');
+    await shot(page, '16-record-en');
+    await page.goto(base + '#/settings');
+    await page.waitForSelector('#functions >> text=Food safety');
+    await shot(page, '17-settings-en');
+    // تبقى اللغة بعد إعادة فتح التطبيق
+    await page.reload();
+    await page.waitForSelector('html[lang=en]');
+
     assert.deepEqual(errors, [], 'no page errors');
     console.log('E2E OK');
   } catch (err) {

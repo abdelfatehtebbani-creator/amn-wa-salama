@@ -1,6 +1,12 @@
 // أدوات واجهة صغيرة مشتركة.
+import { t } from './i18n.js';
 
-export const TYPE_LABELS = { IN: 'بضاعة داخلة', OUT: 'بضاعة خارجة', INC: 'مخالفات العمال' };
+// getters: التسمية تتبع اللغة الحالية.
+export const TYPE_LABELS = {
+  get IN() { return t('بضاعة داخلة'); },
+  get OUT() { return t('بضاعة خارجة'); },
+  get INC() { return t('مخالفات العمال'); }
+};
 export const TYPE_ICONS = { IN: '📥', OUT: '📤', INC: '⚠️' };
 
 export function esc(value) {
@@ -56,7 +62,7 @@ export function setBusy(button, busy, busyText) {
   if (!button) return;
   if (busy) {
     button.dataset.label = button.textContent;
-    button.textContent = busyText || '...جارٍ';
+    button.textContent = busyText || t('…جارٍ');
     button.disabled = true;
   } else {
     if (button.dataset.label) button.textContent = button.dataset.label;
@@ -65,9 +71,9 @@ export function setBusy(button, busy, busyText) {
 }
 
 export function recordSummary(r) {
-  if (r.type === 'IN') return [r.supplier && 'المورد: ' + r.supplier, r.doc_number && 'فاتورة: ' + r.doc_number];
-  if (r.type === 'OUT') return [r.branch && 'الفرع: ' + r.branch, r.doc_number && 'رقم الإذن: ' + r.doc_number];
-  return [r.person_name && 'الشخص: ' + r.person_name];
+  if (r.type === 'IN') return [r.supplier && t('المورد: {v}', { v: r.supplier }), r.doc_number && t('فاتورة: {v}', { v: r.doc_number })];
+  if (r.type === 'OUT') return [r.branch && t('الفرع: {v}', { v: r.branch }), r.doc_number && t('رقم الإذن: {v}', { v: r.doc_number })];
+  return [r.person_name && t('الشخص: {v}', { v: r.person_name })];
 }
 
 export function errorBox(message, retryLabel) {

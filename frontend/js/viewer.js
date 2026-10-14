@@ -1,5 +1,6 @@
 // عارض الصور بملء الشاشة: تنقّل، تنزيل، طباعة.
 import { esc, toast } from './ui.js';
+import { t, isRtl } from './i18n.js';
 
 let current = null;
 
@@ -14,14 +15,14 @@ export function openViewer(loaders, startIndex, title) {
   overlay.setAttribute('aria-modal', 'true');
   overlay.innerHTML = `
     <div class="viewer-bar">
-      <button type="button" class="vbtn" data-act="close" aria-label="إغلاق">✕</button>
+      <button type="button" class="vbtn" data-act="close" aria-label="${t('إغلاق')}">✕</button>
       <span class="viewer-title"></span>
-      <button type="button" class="vbtn" data-act="download" aria-label="تنزيل">⬇️ تنزيل</button>
-      <button type="button" class="vbtn" data-act="print" aria-label="طباعة">🖨️ طباعة</button>
+      <button type="button" class="vbtn" data-act="download" aria-label="${t('تنزيل')}">⬇️ ${t('تنزيل')}</button>
+      <button type="button" class="vbtn" data-act="print" aria-label="${t('طباعة')}">🖨️ ${t('طباعة')}</button>
     </div>
-    <div class="viewer-stage"><img alt=""><span class="muted viewer-loading">…جارٍ التحميل</span></div>
-    <button type="button" class="vnav right" data-act="prev" aria-label="السابقة">›</button>
-    <button type="button" class="vnav left" data-act="next" aria-label="التالية">‹</button>`;
+    <div class="viewer-stage"><img alt=""><span class="muted viewer-loading">${t('…جارٍ التحميل')}</span></div>
+    <button type="button" class="vnav prev" data-act="prev" aria-label="${t('السابقة')}">${isRtl() ? '›' : '‹'}</button>
+    <button type="button" class="vnav next" data-act="next" aria-label="${t('التالية')}">${isRtl() ? '‹' : '›'}</button>`;
   document.body.appendChild(overlay);
   document.body.classList.add('viewer-open');
 
@@ -51,7 +52,7 @@ async function show(index) {
     img.hidden = false;
     loading.hidden = true;
   } catch (err) {
-    loading.textContent = 'تعذّر تحميل الصورة.';
+    loading.textContent = t('تعذّر تحميل الصورة.');
     toast(err.message, 'error');
   }
 }
@@ -68,8 +69,11 @@ function onClick(e) {
 function onKey(e) {
   if (!current) return;
   if (e.key === 'Escape') closeViewer();
-  if (e.key === 'ArrowLeft') show(current.index + 1);
-  if (e.key === 'ArrowRight') show(current.index - 1);
+  // في العربية اليسار هو «التالي»، وفي الإنجليزية العكس.
+  const forward = isRtl() ? 'ArrowLeft' : 'ArrowRight';
+  const backward = isRtl() ? 'ArrowRight' : 'ArrowLeft';
+  if (e.key === forward) show(current.index + 1);
+  if (e.key === backward) show(current.index - 1);
 }
 
 function download() {

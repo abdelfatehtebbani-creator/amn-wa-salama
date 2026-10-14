@@ -4,7 +4,7 @@
   "private": true,
   "description": "أمن و سلامة — أرشيف مصنع حلويات العكر",
   "scripts": {
-    "test": "node --test tests/backend.test.js",
+    "test": "node --test tests/backend.test.js tests/i18n.test.js",
     "dev": "node tests/dev-server.js",
     "check": "node scripts/check-syntax.js",
     "bundle": "node scripts/bundle-gs.js"

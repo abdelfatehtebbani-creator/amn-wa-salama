@@ -1,12 +1,12 @@
 // Service worker: يحفظ ملفات الواجهة فقط لتسريع الفتح.
 // لا يحفظ أي بيانات أو صور من الخادم، ولا يعمل التطبيق دون إنترنت.
 // عند تعديل أي ملف في الواجهة غيّر رقم الإصدار أدناه.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'amn-shell-' + VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/api.js', 'js/config.js', 'js/session.js', 'js/ui.js', 'js/images.js',
-  'js/forms.js', 'js/archive.js', 'js/viewer.js', 'js/admin.js',
+  'js/forms.js', 'js/archive.js', 'js/viewer.js', 'js/admin.js', 'js/i18n.js', 'js/i18n-en.js',
   'icons/icon-192.png', 'icons/icon-512.png'
 ];
 

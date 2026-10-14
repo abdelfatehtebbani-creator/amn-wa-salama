@@ -1,6 +1,7 @@
 // الإعدادات (للإدارة): الفروع، الوظائف، المستخدمون.
 import { call } from './api.js';
 import { esc, $, $$, render, toast, setBusy, confirmDialog, errorBox, shortDate, TYPE_LABELS } from './ui.js';
+import { t, backArrow } from './i18n.js';
 
 const ACCESS = { admin: 'إدارة', user: 'مستخدم' };
 
@@ -8,44 +9,44 @@ export function renderSettings(user) {
   const app = render(`
     <section class="screen">
       <header class="screen-head">
-        <a href="#/home" class="back" aria-label="رجوع">→</a>
-        <h1>⚙️ الإعدادات</h1>
+        <a href="#/home" class="back" aria-label="${t('رجوع')}">${backArrow()}</a>
+        <h1>⚙️ ${t('الإعدادات')}</h1>
       </header>
 
-      <h2 class="section-title">الفروع</h2>
-      <div id="branches"><p class="muted">…جارٍ التحميل</p></div>
+      <h2 class="section-title">${t('الفروع')}</h2>
+      <div id="branches"><p class="muted">${t('…جارٍ التحميل')}</p></div>
       <form id="branch-form" class="inline-form">
-        <input type="text" name="name" maxlength="120" placeholder="اسم فرع جديد" required aria-label="اسم فرع جديد">
-        <button type="submit" class="btn primary">إضافة</button>
+        <input type="text" name="name" maxlength="120" placeholder="${t('اسم فرع جديد')}" required aria-label="${t('اسم فرع جديد')}">
+        <button type="submit" class="btn primary">${t('إضافة')}</button>
       </form>
 
-      <h2 class="section-title">الوظائف</h2>
-      <p class="muted small">لكل وظيفة أنواع السجلات التي يستطيع صاحبها تسجيلها.</p>
-      <div id="functions"><p class="muted">…جارٍ التحميل</p></div>
+      <h2 class="section-title">${t('الوظائف')}</h2>
+      <p class="muted small">${t('لكل وظيفة أنواع السجلات التي يستطيع صاحبها تسجيلها.')}</p>
+      <div id="functions"><p class="muted">${t('…جارٍ التحميل')}</p></div>
       <details class="panel">
-        <summary>➕ إضافة وظيفة</summary>
+        <summary>➕ ${t('إضافة وظيفة')}</summary>
         <form id="function-form">
-          <label class="field"><span>اسم الوظيفة</span>
-            <input type="text" name="name" maxlength="60" required placeholder="مثلًا: مراقب الجودة"></label>
-          <div class="field"><span>يستطيع تسجيل</span><div class="type-checks"></div></div>
-          <button type="submit" class="btn primary">إضافة الوظيفة</button>
+          <label class="field"><span>${t('اسم الوظيفة')}</span>
+            <input type="text" name="name" maxlength="60" required placeholder="${t('مثلًا: مراقب الجودة')}"></label>
+          <div class="field"><span>${t('يستطيع تسجيل')}</span><div class="type-checks"></div></div>
+          <button type="submit" class="btn primary">${t('إضافة الوظيفة')}</button>
         </form>
       </details>
 
-      <h2 class="section-title">المستخدمون</h2>
-      <div id="users"><p class="muted">…جارٍ التحميل</p></div>
+      <h2 class="section-title">${t('المستخدمون')}</h2>
+      <div id="users"><p class="muted">${t('…جارٍ التحميل')}</p></div>
       <details class="panel">
-        <summary>➕ إضافة مستخدم</summary>
+        <summary>➕ ${t('إضافة مستخدم')}</summary>
         <form id="user-form">
-          <label class="field"><span>اسم الدخول (حروف إنجليزية صغيرة وأرقام)</span>
+          <label class="field"><span>${t('اسم الدخول (حروف إنجليزية صغيرة وأرقام)')}</span>
             <input type="text" name="username" required pattern="[a-z0-9._\\-]{3,40}" autocapitalize="off" autocomplete="off" dir="ltr"></label>
-          <label class="field"><span>الاسم الظاهر</span>
+          <label class="field"><span>${t('الاسم الظاهر')}</span>
             <input type="text" name="display_name" maxlength="60" required></label>
           <div class="access-fields"></div>
-          <label class="field"><span>كلمة مرور مؤقتة (6 أحرف على الأقل)</span>
+          <label class="field"><span>${t('كلمة مرور مؤقتة (6 أحرف على الأقل)')}</span>
             <input type="text" name="password" minlength="6" required autocomplete="off" dir="ltr"></label>
-          <p class="muted">سيُطلب من المستخدم تغييرها عند أول دخول.</p>
-          <button type="submit" class="btn primary">إنشاء الحساب</button>
+          <p class="muted">${t('سيُطلب من المستخدم تغييرها عند أول دخول.')}</p>
+          <button type="submit" class="btn primary">${t('إنشاء الحساب')}</button>
         </form>
       </details>
     </section>`);
@@ -64,7 +65,7 @@ export function renderSettings(user) {
       ctx.branches = branches;
       input.value = '';
       drawBranches(ctx);
-      toast('تمت إضافة الفرع.', 'success');
+      toast(t('تمت إضافة الفرع.'), 'success');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -81,7 +82,7 @@ export function renderSettings(user) {
       applyRoles(ctx, await call('saveRole', { name: form.elements.name.value.trim(), can_create: checkedTypes(form) }));
       form.reset();
       form.closest('details').open = false;
-      toast('تمت إضافة الوظيفة.', 'success');
+      toast(t('تمت إضافة الوظيفة.'), 'success');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -102,7 +103,7 @@ export function renderSettings(user) {
       drawAccessFields(ctx, $('.access-fields', form));
       form.closest('details').open = false;
       drawUsers(ctx);
-      toast('تم إنشاء الحساب.', 'success');
+      toast(t('تم إنشاء الحساب.'), 'success');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -129,10 +130,10 @@ function drawBranches(ctx) {
   box.innerHTML = ctx.branches.length
     ? `<ul class="list">${ctx.branches.map(b => `
         <li class="${b.active ? '' : 'inactive'}">
-          <span>${esc(b.name)}${b.active ? '' : ' <small class="muted">(موقوف)</small>'}</span>
-          <button type="button" class="btn small secondary" data-toggle="${esc(b.branch_id)}">${b.active ? 'إيقاف' : 'تفعيل'}</button>
+          <span>${esc(b.name)}${b.active ? '' : ` <small class="muted">${t('(موقوف)')}</small>`}</span>
+          <button type="button" class="btn small secondary" data-toggle="${esc(b.branch_id)}">${b.active ? t('إيقاف') : t('تفعيل')}</button>
         </li>`).join('')}</ul>`
-    : '<p class="muted">لا توجد فروع بعد. أضف أول فرع أدناه.</p>';
+    : `<p class="muted">${t('لا توجد فروع بعد. أضف أول فرع أدناه.')}</p>`;
   $$('[data-toggle]', box).forEach(btn => btn.addEventListener('click', async () => {
     const b = ctx.branches.find(x => x.branch_id === btn.dataset.toggle);
     setBusy(btn, true);
@@ -152,8 +153,8 @@ function drawBranches(ctx) {
 function functions(ctx) { return ctx.roles.filter(r => !r.is_admin); }
 
 function typeChecks(ctx, selected = []) {
-  return ctx.types.map(t => `
-    <label class="check inline-check"><input type="checkbox" name="can_create" value="${t.type}" ${selected.includes(t.type) ? 'checked' : ''}> ${esc(t.label)}</label>`).join('');
+  return ctx.types.map(type => `
+    <label class="check inline-check"><input type="checkbox" name="can_create" value="${type.type}" ${selected.includes(type.type) ? 'checked' : ''}> ${esc(TYPE_LABELS[type.type] || type.label)}</label>`).join('');
 }
 
 function checkedTypes(form) {
@@ -177,21 +178,21 @@ function drawFunctions(ctx) {
   box.innerHTML = list.length
     ? `<ul class="list">${list.map(r => `
         <li>
-          <div><strong>${esc(r.name)}</strong><br>
-            <small class="muted">${r.can_create.map(t => esc(TYPE_LABELS[t] || t)).join(' · ')}</small></div>
-          <button type="button" class="btn small secondary" data-edit-role="${esc(r.role_id)}">تعديل</button>
+          <div><strong>${esc(t(r.name))}</strong><br>
+            <small class="muted">${r.can_create.map(type => esc(TYPE_LABELS[type] || type)).join(' · ')}</small></div>
+          <button type="button" class="btn small secondary" data-edit-role="${esc(r.role_id)}">${t('تعديل')}</button>
         </li>`).join('')}</ul>`
-    : '<p class="muted">لا توجد وظائف بعد.</p>';
+    : `<p class="muted">${t('لا توجد وظائف بعد.')}</p>`;
   $$('[data-edit-role]', box).forEach(btn => btn.addEventListener('click', () => {
     const r = ctx.roles.find(x => x.role_id === btn.dataset.editRole);
     const li = btn.closest('li');
     li.innerHTML = `
       <form class="edit-inline">
-        <input type="text" name="name" value="${esc(r.name)}" maxlength="60" required aria-label="اسم الوظيفة">
+        <input type="text" name="name" value="${esc(r.name)}" maxlength="60" required aria-label="${t('اسم الوظيفة')}">
         <div class="type-checks">${typeChecks(ctx, r.can_create)}</div>
         <div class="user-actions">
-          <button type="button" class="btn small secondary" data-cancel>إلغاء</button>
-          <button type="submit" class="btn small primary">حفظ</button>
+          <button type="button" class="btn small secondary" data-cancel>${t('إلغاء')}</button>
+          <button type="submit" class="btn small primary">${t('حفظ')}</button>
         </div>
       </form>`;
     const form = $('form', li);
@@ -203,7 +204,7 @@ function drawFunctions(ctx) {
       try {
         applyRoles(ctx, await call('saveRole', { role_id: r.role_id, name: form.elements.name.value.trim(), can_create: checkedTypes(form) }));
         drawUsers(ctx);
-        toast('تم حفظ الوظيفة.', 'success');
+        toast(t('تم حفظ الوظيفة.'), 'success');
       } catch (err) {
         setBusy(save, false);
         toast(err.message, 'error');
@@ -218,15 +219,15 @@ function drawFunctions(ctx) {
 function drawAccessFields(ctx, box, current = { access: 'user', role: '' }) {
   const list = functions(ctx);
   box.innerHTML = `
-    <label class="field"><span>الصلاحية</span>
+    <label class="field"><span>${t('الصلاحية')}</span>
       <select name="access">
-        <option value="user" ${current.access === 'user' ? 'selected' : ''}>مستخدم: يسجّل فقط</option>
-        <option value="admin" ${current.access === 'admin' ? 'selected' : ''}>إدارة: الأرشيف والإعدادات وكل الأنواع</option>
+        <option value="user" ${current.access === 'user' ? 'selected' : ''}>${t('مستخدم: يسجّل فقط')}</option>
+        <option value="admin" ${current.access === 'admin' ? 'selected' : ''}>${t('إدارة: الأرشيف والإعدادات وكل الأنواع')}</option>
       </select></label>
-    <label class="field"><span>الوظيفة <small data-optional hidden>(اختيارية للإدارة)</small></span>
+    <label class="field"><span>${t('الوظيفة')} <small data-optional hidden>${t('(اختيارية للإدارة)')}</small></span>
       <select name="role">
-        <option value="" data-none>— بدون وظيفة —</option>
-        ${list.map(r => `<option value="${esc(r.role_id)}" ${r.role_id === current.role ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
+        <option value="" data-none>${t('— بدون وظيفة —')}</option>
+        ${list.map(r => `<option value="${esc(r.role_id)}" ${r.role_id === current.role ? 'selected' : ''}>${esc(t(r.name))}</option>`).join('')}
       </select></label>`;
   const access = $('select[name="access"]', box);
   const sync = () => {
@@ -254,7 +255,7 @@ async function loadUsers(ctx) {
 }
 
 function userLabel(u) {
-  return [ACCESS[u.access] || u.access, u.role_name].filter(Boolean).join(' · ');
+  return [ACCESS[u.access] ? t(ACCESS[u.access]) : u.access, t(u.role_name || '')].filter(Boolean).join(' · ');
 }
 
 function drawUsers(ctx) {
@@ -265,15 +266,15 @@ function drawUsers(ctx) {
       <div>
         <strong>${esc(u.display_name)}</strong> <span class="muted" dir="ltr">${esc(u.username)}</span><br>
         <small class="muted">${esc(userLabel(u))}
-          ${u.active ? '' : ' · موقوف'}${u.locked ? ' · مقفل مؤقتًا' : ''}
-          ${u.last_login_at ? ' · آخر دخول ' + esc(shortDate(u.last_login_at)) : ''}</small>
+          ${u.active ? '' : ' · ' + t('موقوف')}${u.locked ? ' · ' + t('مقفل مؤقتًا') : ''}
+          ${u.last_login_at ? ' · ' + t('آخر دخول {date}', { date: esc(shortDate(u.last_login_at)) }) : ''}</small>
       </div>
-      ${u.username === ctx.user.username ? '<small class="muted">(أنت)</small>' : `
+      ${u.username === ctx.user.username ? `<small class="muted">${t('(أنت)')}</small>` : `
       <div class="user-actions">
-        <button type="button" class="btn small secondary" data-act="edit" data-u="${esc(u.username)}">تعديل</button>
-        <button type="button" class="btn small secondary" data-act="reset" data-u="${esc(u.username)}">كلمة مرور جديدة</button>
-        <button type="button" class="btn small secondary" data-act="sessions" data-u="${esc(u.username)}">إنهاء الجلسات</button>
-        <button type="button" class="btn small ${u.active ? 'danger' : 'secondary'}" data-act="active" data-u="${esc(u.username)}">${u.active ? 'إيقاف' : 'تفعيل'}</button>
+        <button type="button" class="btn small secondary" data-act="edit" data-u="${esc(u.username)}">${t('تعديل')}</button>
+        <button type="button" class="btn small secondary" data-act="reset" data-u="${esc(u.username)}">${t('كلمة مرور جديدة')}</button>
+        <button type="button" class="btn small secondary" data-act="sessions" data-u="${esc(u.username)}">${t('إنهاء الجلسات')}</button>
+        <button type="button" class="btn small ${u.active ? 'danger' : 'secondary'}" data-act="active" data-u="${esc(u.username)}">${u.active ? t('إيقاف') : t('تفعيل')}</button>
       </div>`}
     </li>`).join('')}</ul>`;
 
@@ -285,20 +286,20 @@ function drawUsers(ctx) {
         return;
       }
       if (btn.dataset.act === 'reset') {
-        const pw = window.prompt(`كلمة مرور مؤقتة جديدة لـ «${u.display_name}» (6 أحرف على الأقل):`);
+        const pw = window.prompt(t('كلمة مرور مؤقتة جديدة لـ «{name}» (6 أحرف على الأقل):', { name: u.display_name }));
         if (!pw) return;
         setBusy(btn, true);
         await call('resetPassword', { username: u.username, password: pw });
-        toast('تم تعيين كلمة المرور. سيُطلب منه تغييرها عند الدخول.', 'success');
+        toast(t('تم تعيين كلمة المرور. سيُطلب منه تغييرها عند الدخول.'), 'success');
       }
       if (btn.dataset.act === 'sessions') {
-        if (!(await confirmDialog(`تسجيل خروج «${u.display_name}» من كل الأجهزة؟`))) return;
+        if (!(await confirmDialog(t('تسجيل خروج «{name}» من كل الأجهزة؟', { name: u.display_name })))) return;
         setBusy(btn, true);
         const res = await call('revokeSessions', { username: u.username });
-        toast(`تم إنهاء ${res.sessions_ended} جلسة.`, 'success');
+        toast(t('تم إنهاء {n} جلسة.', { n: res.sessions_ended }), 'success');
       }
       if (btn.dataset.act === 'active') {
-        if (u.active && !(await confirmDialog(`إيقاف حساب «${u.display_name}»؟ لن يتمكن من الدخول.`))) return;
+        if (u.active && !(await confirmDialog(t('إيقاف حساب «{name}»؟ لن يتمكن من الدخول.', { name: u.display_name })))) return;
         setBusy(btn, true);
         ctx.users = (await call('saveUser', { ...userPayload(ctx, u), active: !u.active })).users;
         drawUsers(ctx);
@@ -324,12 +325,12 @@ function editUser(ctx, li, u) {
   const base = userPayload(ctx, u);
   li.innerHTML = `
     <form class="edit-inline">
-      <label class="field"><span>الاسم الظاهر</span>
+      <label class="field"><span>${t('الاسم الظاهر')}</span>
         <input type="text" name="display_name" value="${esc(u.display_name)}" maxlength="60" required></label>
       <div class="access-fields"></div>
       <div class="user-actions">
-        <button type="button" class="btn small secondary" data-cancel>إلغاء</button>
-        <button type="submit" class="btn small primary">حفظ</button>
+        <button type="button" class="btn small secondary" data-cancel>${t('إلغاء')}</button>
+        <button type="submit" class="btn small primary">${t('حفظ')}</button>
       </div>
     </form>`;
   const form = $('form', li);
@@ -343,7 +344,7 @@ function editUser(ctx, li, u) {
     try {
       ctx.users = (await call('saveUser', { ...base, ...d })).users;
       drawUsers(ctx);
-      toast('تم حفظ التعديل. سيُطلب من المستخدم الدخول من جديد إن تغيّرت صلاحيته أو وظيفته.', 'success');
+      toast(t('تم حفظ التعديل. سيُطلب من المستخدم الدخول من جديد إن تغيّرت صلاحيته أو وظيفته.'), 'success');
     } catch (err) {
       setBusy(save, false);
       toast(err.message, 'error');
@@ -356,19 +357,19 @@ export function renderPassword(user, { forced = false, onDone } = {}) {
   const app = render(`
     <section class="screen narrow">
       <header class="screen-head">
-        ${forced ? '' : '<a href="#/home" class="back" aria-label="رجوع">→</a>'}
-        <h1>🔑 تغيير كلمة المرور</h1>
+        ${forced ? '' : `<a href="#/home" class="back" aria-label="${t('رجوع')}">${backArrow()}</a>`}
+        <h1>🔑 ${t('تغيير كلمة المرور')}</h1>
       </header>
-      ${forced ? '<div class="alert info">مرحبًا ' + esc(user.display_name) + '. اختر كلمة مرور خاصة بك بدل كلمة المرور المؤقتة.</div>' : ''}
+      ${forced ? `<div class="alert info">${esc(t('مرحبًا {name}. اختر كلمة مرور خاصة بك بدل كلمة المرور المؤقتة.', { name: user.display_name }))}</div>` : ''}
       <form id="pw-form">
-        <label class="field"><span>كلمة المرور الحالية</span>
+        <label class="field"><span>${t('كلمة المرور الحالية')}</span>
           <input type="password" name="old_password" required autocomplete="current-password"></label>
-        <label class="field"><span>كلمة المرور الجديدة (6 أحرف على الأقل)</span>
+        <label class="field"><span>${t('كلمة المرور الجديدة (6 أحرف على الأقل)')}</span>
           <input type="password" name="new_password" minlength="6" required autocomplete="new-password"></label>
-        <label class="field"><span>تأكيد كلمة المرور الجديدة</span>
+        <label class="field"><span>${t('تأكيد كلمة المرور الجديدة')}</span>
           <input type="password" name="confirm" minlength="6" required autocomplete="new-password"></label>
         <div id="pw-status"></div>
-        <button type="submit" class="btn primary big">حفظ</button>
+        <button type="submit" class="btn primary big">${t('حفظ')}</button>
       </form>
     </section>`);
   $('#pw-form', app).addEventListener('submit', async e => {
@@ -376,14 +377,14 @@ export function renderPassword(user, { forced = false, onDone } = {}) {
     const d = Object.fromEntries(new FormData(e.target).entries());
     const status = $('#pw-status', app);
     if (d.new_password !== d.confirm) {
-      status.innerHTML = errorBox('كلمتا المرور غير متطابقتين.');
+      status.innerHTML = errorBox(t('كلمتا المرور غير متطابقتين.'));
       return;
     }
     const btn = e.target.querySelector('button');
-    setBusy(btn, true, '…جارٍ الحفظ');
+    setBusy(btn, true, t('…جارٍ الحفظ'));
     try {
       await call('changePassword', { old_password: d.old_password, new_password: d.new_password });
-      toast('تم تغيير كلمة المرور.', 'success');
+      toast(t('تم تغيير كلمة المرور.'), 'success');
       onDone && onDone();
     } catch (err) {
       setBusy(btn, false);

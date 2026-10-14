@@ -1,6 +1,7 @@
 // الاتصال بخادم Apps Script.
 import { API_URL } from './config.js';
 import { getToken, clearSession } from './session.js';
+import { t, tServer } from './i18n.js';
 
 export class ApiError extends Error {
   constructor(code, message, extra) {
@@ -18,7 +19,7 @@ const NETWORK_MESSAGE = 'تعذّر الاتصال بالخادم. تحقّق م
  */
 export async function call(action, params = {}, { timeoutMs = 45000 } = {}) {
   if (API_URL.startsWith('PASTE_')) {
-    throw new ApiError('CONFIG', 'لم يُضبط رابط الخادم بعد في الملف js/config.js.');
+    throw new ApiError('CONFIG', t('لم يُضبط رابط الخادم بعد في الملف js/config.js.'));
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -33,27 +34,28 @@ export async function call(action, params = {}, { timeoutMs = 45000 } = {}) {
     });
   } catch (err) {
     throw new ApiError('NETWORK', err.name === 'AbortError'
-      ? 'انتهت مهلة الاتصال بالخادم. أعد المحاولة.' : NETWORK_MESSAGE);
+      ? t('انتهت مهلة الاتصال بالخادم. أعد المحاولة.') : t(NETWORK_MESSAGE));
   } finally {
     clearTimeout(timer);
   }
-  if (!response.ok) throw new ApiError('NETWORK', NETWORK_MESSAGE);
+  if (!response.ok) throw new ApiError('NETWORK', t(NETWORK_MESSAGE));
 
   let body;
   try {
     body = await response.json();
   } catch {
-    throw new ApiError('SERVER', 'وصل رد غير متوقع من الخادم. أعد المحاولة.');
+    throw new ApiError('SERVER', t('وصل رد غير متوقع من الخادم. أعد المحاولة.'));
   }
   if (!body.ok) {
+    const message = tServer(body.message);
     if (body.error === 'AUTH') {
       clearSession();
-      window.dispatchEvent(new CustomEvent('auth-lost', { detail: body.message }));
+      window.dispatchEvent(new CustomEvent('auth-lost', { detail: message }));
     }
     if (body.error === 'MUST_CHANGE_PASSWORD') {
       window.dispatchEvent(new CustomEvent('must-change'));
     }
-    throw new ApiError(body.error, body.message, body.extra);
+    throw new ApiError(body.error, message, body.extra);
   }
   return body.data;
 }

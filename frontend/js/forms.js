@@ -2,6 +2,7 @@
 import { call } from './api.js';
 import { compressImage, blobToBase64, newRequestId } from './images.js';
 import { esc, $, $$, render, nowLocalInput, toast, TYPE_LABELS, TYPE_ICONS, errorBox } from './ui.js';
+import { t, backArrow } from './i18n.js';
 
 const MAX_IMAGES = 10;
 
@@ -26,38 +27,38 @@ export function leaveForm() {
 const FIELD_HTML = {
   event_at: type => `
     <label class="field">
-      <span>${type === 'INC' ? 'تاريخ ووقت الواقعة' : 'التاريخ والوقت'}</span>
+      <span>${type === 'INC' ? t('تاريخ ووقت الواقعة') : t('التاريخ والوقت')}</span>
       <input type="datetime-local" name="event_at" value="${nowLocalInput()}" required>
     </label>`,
   supplier: () => `
     <label class="field">
-      <span>اسم المورد <small>(اختياري)</small></span>
+      <span>${t('اسم المورد')} <small>${t('(اختياري)')}</small></span>
       <input type="text" name="supplier" maxlength="120" list="supplier-list" autocomplete="off">
       <datalist id="supplier-list"></datalist>
     </label>`,
   branch: () => `
     <label class="field">
-      <span>الفرع المستلم</span>
-      <select name="branch" required><option value="">...جارٍ تحميل الفروع</option></select>
+      <span>${t('الفرع المستلم')}</span>
+      <select name="branch" required><option value="">${t('…جارٍ تحميل الفروع')}</option></select>
     </label>`,
   doc_number: type => `
     <label class="field">
-      <span>${type === 'IN' ? 'رقم الفاتورة' : 'رقم الفاتورة أو إذن التسليم'} <small>(اختياري)</small></span>
+      <span>${type === 'IN' ? t('رقم الفاتورة') : t('رقم الفاتورة أو إذن التسليم')} <small>${t('(اختياري)')}</small></span>
       <input type="text" name="doc_number" maxlength="60" inputmode="text" autocomplete="off">
     </label>`,
   person_name: () => `
     <label class="field">
-      <span>اسم الشخص المعني <small>(إن كان معروفًا)</small></span>
+      <span>${t('اسم الشخص المعني')} <small>${t('(إن كان معروفًا)')}</small></span>
       <input type="text" name="person_name" maxlength="120" autocomplete="off">
     </label>`,
   description: type => `
     <label class="field">
-      <span>وصف مختصر ${type === 'INC' ? '' : '<small>(اختياري)</small>'}</span>
+      <span>${t('وصف مختصر')} ${type === 'INC' ? '' : `<small>${t('(اختياري)')}</small>`}</span>
       <textarea name="description" maxlength="500" rows="2" ${type === 'INC' ? 'required' : ''}></textarea>
     </label>`,
   notes: () => `
     <label class="field">
-      <span>ملاحظات <small>(اختياري)</small></span>
+      <span>${t('ملاحظات')} <small>${t('(اختياري)')}</small></span>
       <textarea name="notes" maxlength="1000" rows="2"></textarea>
     </label>`
 };
@@ -79,28 +80,28 @@ export function renderForm(type, user) {
   const app = render(`
     <section class="screen">
       <header class="screen-head">
-        <a href="#/home" class="back" aria-label="رجوع">→</a>
+        <a href="#/home" class="back" aria-label="${t('رجوع')}">${backArrow()}</a>
         <h1>${TYPE_ICONS[type]} ${esc(TYPE_LABELS[type])}</h1>
       </header>
       <form id="record-form" novalidate>
         ${FIELDS[type].map(f => FIELD_HTML[f](type)).join('')}
 
         <div class="field">
-          <span>الصور <small>(صورة واحدة على الأقل، حتى ${MAX_IMAGES})</small></span>
+          <span>${t('الصور')} <small>${t('(صورة واحدة على الأقل، حتى {n})', { n: MAX_IMAGES })}</small></span>
           <div class="thumbs" id="thumbs"></div>
           <div class="photo-buttons">
-            <label class="btn secondary">📷 التقاط صورة
+            <label class="btn secondary">📷 ${t('التقاط صورة')}
               <input type="file" accept="image/*" capture="environment" hidden data-pick>
             </label>
-            <label class="btn secondary">🖼️ من الجهاز
+            <label class="btn secondary">🖼️ ${t('من الجهاز')}
               <input type="file" accept="image/*" multiple hidden data-pick>
             </label>
           </div>
         </div>
 
-        <p class="muted">يُسجَّل باسم: <strong>${esc(user.display_name)}</strong></p>
+        <p class="muted">${t('يُسجَّل باسم:')} <strong>${esc(user.display_name)}</strong></p>
         <div id="form-status" aria-live="polite"></div>
-        <button type="submit" class="btn primary big" id="save-btn">حفظ السجل</button>
+        <button type="submit" class="btn primary big" id="save-btn">${t('حفظ السجل')}</button>
       </form>
     </section>`);
 
@@ -118,8 +119,8 @@ async function loadLookups(type, form) {
       const select = $('select[name="branch"]', form);
       if (!select) return;
       select.innerHTML = branches.length
-        ? '<option value="">اختر الفرع</option>' + branches.map(b => `<option>${esc(b.name)}</option>`).join('')
-        : '<option value="">لا توجد فروع. اطلب من الإدارة إضافتها.</option>';
+        ? `<option value="">${t('اختر الفرع')}</option>` + branches.map(b => `<option>${esc(b.name)}</option>`).join('')
+        : `<option value="">${t('لا توجد فروع. اطلب من الإدارة إضافتها.')}</option>`;
     }
     if (type === 'IN') {
       const { suppliers } = await call('suppliers');
@@ -129,7 +130,7 @@ async function loadLookups(type, form) {
   } catch (err) {
     if (type === 'OUT') {
       const select = $('select[name="branch"]', form);
-      if (select) select.innerHTML = '<option value="">تعذّر تحميل الفروع، أعد فتح الصفحة</option>';
+      if (select) select.innerHTML = `<option value="">${t('تعذّر تحميل الفروع، أعد فتح الصفحة')}</option>`;
     }
   }
 }
@@ -141,7 +142,7 @@ async function onPick(e) {
   if (!state || state.saving) return;
   for (const file of files) {
     if (state.images.length >= MAX_IMAGES) {
-      toast(`الحد الأقصى ${MAX_IMAGES} صور للسجل الواحد.`, 'error');
+      toast(t('الحد الأقصى {n} صور للسجل الواحد.', { n: MAX_IMAGES }), 'error');
       break;
     }
     try {
@@ -163,11 +164,11 @@ function renderThumbs() {
   box.innerHTML = state.images.length
     ? state.images.map(img => `
       <figure class="thumb ${img.status}">
-        <img src="${img.url}" alt="صورة ${img.index}">
+        <img src="${img.url}" alt="${t('صورة {n}', { n: img.index })}">
         ${STATUS_LABELS[img.status] ? `<span class="badge">${STATUS_LABELS[img.status]}</span>` : ''}
-        ${state.saving ? '' : `<button type="button" class="remove" data-remove="${img.index}" aria-label="حذف الصورة">×</button>`}
+        ${state.saving ? '' : `<button type="button" class="remove" data-remove="${img.index}" aria-label="${t('حذف الصورة')}">×</button>`}
       </figure>`).join('')
-    : '<p class="muted empty-thumbs">لم تُرفق صور بعد</p>';
+    : `<p class="muted empty-thumbs">${t('لم تُرفق صور بعد')}</p>`;
   $$('[data-remove]', box).forEach(btn => btn.addEventListener('click', () => {
     const idx = Number(btn.dataset.remove);
     const img = state.images.find(i => i.index === idx);
@@ -190,10 +191,10 @@ function collectFields(form) {
 }
 
 function validate(values) {
-  if (!state.images.length) return 'أرفق صورة واحدة على الأقل.';
-  if (!values.event_at) return 'حدّد التاريخ والوقت.';
-  if (state.type === 'OUT' && !values.fields.branch) return 'اختر الفرع المستلم.';
-  if (state.type === 'INC' && !values.fields.description) return 'اكتب وصفًا مختصرًا للواقعة.';
+  if (!state.images.length) return t('أرفق صورة واحدة على الأقل.');
+  if (!values.event_at) return t('حدّد التاريخ والوقت.');
+  if (state.type === 'OUT' && !values.fields.branch) return t('اختر الفرع المستلم.');
+  if (state.type === 'INC' && !values.fields.description) return t('اكتب وصفًا مختصرًا للواقعة.');
   return '';
 }
 
@@ -203,7 +204,7 @@ async function uploadPending() {
   for (const img of pending) {
     img.status = 'uploading';
     renderThumbs();
-    setStatus(`<div class="alert info">جارٍ رفع الصور… ${n} من ${state.images.length}</div>`);
+    setStatus(`<div class="alert info">${t('جارٍ رفع الصور… {n} من {total}', { n, total: state.images.length })}</div>`);
     try {
       await call('uploadImage', {
         request_id: state.requestId, index: img.index, type: state.type,
@@ -233,14 +234,14 @@ async function save() {
   const button = document.getElementById('save-btn');
   state.saving = true;
   button.disabled = true;
-  button.textContent = '…جارٍ الحفظ';
+  button.textContent = t('…جارٍ الحفظ');
   renderThumbs();
 
   try {
     let result;
     for (let attempt = 0; ; attempt++) {
       await uploadPending();
-      setStatus('<div class="alert info">جارٍ حفظ السجل…</div>');
+      setStatus(`<div class="alert info">${t('جارٍ حفظ السجل…')}</div>`);
       try {
         result = await call('createRecord', {
           request_id: state.requestId, type: state.type, event_at: values.event_at,
@@ -263,8 +264,8 @@ async function save() {
     state.saving = false;
     renderThumbs();
     button.disabled = false;
-    button.textContent = 'إعادة المحاولة';
-    setStatus(errorBox(`لم يُحفظ السجل. ${err.message}`, 'إعادة المحاولة'));
+    button.textContent = t('إعادة المحاولة');
+    setStatus(errorBox(`${t('لم يُحفظ السجل.')} ${err.message}`, t('إعادة المحاولة')));
     const retry = document.querySelector('[data-retry]');
     if (retry) retry.addEventListener('click', save);
   }
@@ -277,12 +278,12 @@ function showSuccess(record) {
   render(`
     <section class="screen success">
       <div class="success-mark" aria-hidden="true">✓</div>
-      <h1>تم حفظ السجل بنجاح</h1>
+      <h1>${t('تم حفظ السجل بنجاح')}</h1>
       <p class="record-id">${esc(record.record_id)}</p>
-      <p class="muted">${esc(record.type_label)} · ${record.file_count} صورة</p>
+      <p class="muted">${esc(TYPE_LABELS[record.type] || record.type_label)} · ${t('{n} صورة', { n: record.file_count })}</p>
       <div class="stack">
-        <a class="btn primary big" href="#/new/${type}" data-again>تسجيل ${esc(TYPE_LABELS[type])} جديد</a>
-        <a class="btn secondary" href="#/home">الصفحة الرئيسية</a>
+        <a class="btn primary big" href="#/new/${type}" data-again>${esc(t('تسجيل {type} جديد', { type: TYPE_LABELS[type] }))}</a>
+        <a class="btn secondary" href="#/home">${t('الصفحة الرئيسية')}</a>
       </div>
     </section>`);
   // نفس الرابط الحالي لا يُطلق hashchange، لذا نعيد الرسم يدويًا.
